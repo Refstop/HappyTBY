@@ -1,0 +1,25 @@
+<?xml version="1.0"?>
+<package format="2">
+  <name>happytby</name>
+  <version>1.2.5</version>
+  <description>
+    ROS packages for the AA contest RC car HappyTBY (meta package)
+  </description>
+  <license>Apache 2.0</license>
+  <license>BSD</license>
+  <author email="bhbhchoi@yu.ac.kr">Refstop</author>
+  <author>Refstop</author>
+  <maintainer email="bhbhchoi@yu.ac.kr">Refstop</maintainer>
+  <buildtool_depend>catkin</buildtool_depend>
+  <exec_depend>happytby_bringup</exec_depend>
+  <exec_depend>happytby_slam</exec_depend>
+  <exec_depend>happytby_navigation</exec_depend>
+  <exec_depend>sc_mini</exec_depend>
+  <exec_depend>handsfree_ros_imu</exec_depend>
+  <exec_depend>jetson_camera</exec_depend>
+  <exec_depend>opencv_line_detection</exec_depend>
+  <exec_depend>iris_lama</exec_depend>
+  <exec_depend>iris_lama_ros</exec_depend>
+  <exec_depend>auto_parking</exec_depend>
+  <export><metapackage/></export>
+</package>

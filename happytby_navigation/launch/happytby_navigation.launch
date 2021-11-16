@@ -1,0 +1,15 @@
+<launch>
+  <!-- Arguments -->
+  <arg name="map_file" default="/home/sparo/data/map/rb_bldg_3rd_edited_edited2.yaml"/>
+  <arg name="open_rviz" default="true"/>
+  <arg name="move_forward_only" default="true"/>
+  <arg name="trans_tol"  default="0.2"/>
+  
+  <node pkg="rviz" type="rviz" name="rviz" required="true" args="-d $(find happytby_navigation)/rviz/happytby_navigation.rviz"/>
+  <node pkg="map_server" name="map_server" type="map_server" args="$(arg map_file)"/>
+  <include file="$(find iris_lama_ros)/launch/loc2d.launch"/>
+  <include file="$(find happytby_navigation)/launch/move_base.launch">
+    <arg name="move_forward_only" value="$(arg move_forward_only)"/>
+  </include>
+
+</launch>

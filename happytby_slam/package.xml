@@ -1,0 +1,16 @@
+<?xml version="1.0"?>
+<package format="2">
+  <name>happytby_slam</name>
+  <version>1.2.5</version>
+  <description>
+    The happytby_slam package provides roslaunch scripts for starting the SLAM
+  </description>
+  <license>Apache 2.0</license>
+  <author email="bhbhchoi@yu.ac.kr">Refstop</author>
+  <author>Refstop</author>
+  <maintainer email="bhbhchoi@yu.ac.kr">Refstop</maintainer>
+  <buildtool_depend>catkin</buildtool_depend>
+  <depend>roscpp</depend>
+  <depend>sensor_msgs</depend>
+  <exec_depend>happytby_bringup</exec_depend>
+</package>

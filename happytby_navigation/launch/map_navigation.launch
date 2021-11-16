@@ -1,0 +1,6 @@
+<launch>
+  <node pkg="happytby_navigation" type="map_navigation_client.py" name="map_navigation_client" output="screen">
+    <rosparam file="$(find happytby_navigation)/param/Goals.yaml" command="load" />
+  </node>
+
+</launch>
