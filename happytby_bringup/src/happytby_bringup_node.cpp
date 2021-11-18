@@ -2,13 +2,12 @@
 #define DEBUG_ROS_INFO 1
 #include "ros/ros.h"
 #include "std_msgs/String.h"
-#include "std_msgs/Int16.h"
-// #include "geometry_msgs/Twist.h"
 #include "sensor_msgs/LaserScan.h"
 #include "sensor_msgs/Range.h"
 #include "tf/transform_broadcaster.h"
 #include "nav_msgs/Odometry.h"
 #include "ackermann_msgs/AckermannDriveStamped.h"
+#include "sensor_msgs/Imu.h"
 
 #include <string.h>
 #include <unistd.h>
@@ -28,7 +27,7 @@
 //I2C bus
 static const char * deviceName = "/dev/i2c-0";
 
-#define MAX_L_STEER - 30
+#define MAX_L_STEER -30
 #define MAX_R_STEER 30
 #define STEER_NEUTRAL_ANGLE 90
 
@@ -41,7 +40,7 @@ static const char * deviceName = "/dev/i2c-0";
 
 #define WHEEL_RADIUS 0.0365
 #define COOUNT_PER_REV 2600
-int Base_Speed = 130;
+int Base_Speed = 0;
 
 //////////////////////////////// Odometry ////////////////////////////
 
@@ -51,7 +50,7 @@ struct BaseSensorData {
 } myBaseSensorData;
 
 struct OdomCaculateData {
-    //motor params
+    // motor params
     // float distance_ratio = (67.6 * 3.14159 / 1000) / 2200; //0.000176; unit: m/encoder  67.5
     float distance_ratio = (2*WHEEL_RADIUS*M_PI) / COOUNT_PER_REV;
     //odom result
@@ -74,6 +73,7 @@ long encoder = 0;
 
 unsigned char protocol_data[7] = {'#', 0, 0, 0, 0, 0, '*'}; // start byte '#' - end bytte '*'
 char frameid[] = "/sonar_range";
+long theta, theta_old = 0;
 
 int file_I2C;
 
@@ -113,17 +113,31 @@ void CarControlCallback(const ackermann_msgs::AckermannDriveStamped & msg) {
     
     Base_Speed = (int)msg.drive.speed;
     motor_speed = Base_Speed;
-    if (motor_speed >= 250) 
-        motor_speed = 250;
-    if (motor_speed <= -250) 
-        motor_speed = -250;
+    if (motor_speed >= 255) 
+        motor_speed = 255;
+    if (motor_speed <= -255) protocol_data[0] = '#';
+            protocol_data[1] = 'C';
+            protocol_data[2] = (steering_angle & 0xff00) >> 8;
+            protocol_data[3] = (steering_angle & 0x00ff);
+            protocol_data[4] = (motor_speed & 0xff00) >> 8;
+            protocol_data[5] = (motor_speed & 0x00ff);
+            protocol_data[6] = '*';
+            write(file_I2C, protocol_data, 7);
+}
+
+void ImuCallback(const sensor_msgs::Imu & msg) {
+    tf::Quaternion T_quaternion(msg.orientation.x, msg.orientation.y,
+                                msg.orientation.z, msg.orientation.w);
+    double roll, pitch, yaw;
+    tf::Matrix3x3(T_quaternion).getRPY(roll, pitch, yaw);
+    theta = yaw;
+    // ROS_INFO("theta : %.16f", theta);
 }
 
 void scanCallback(const sensor_msgs::LaserScan::ConstPtr & scan) {
     int count = (int)(360. / RAD2DEG(scan -> angle_increment));
     int sum = 0;
-    int sum_l = 0,
-    sum_r = 0;
+    int sum_l = 0, sum_r = 0;
     double dist_y = 0.0;
 
     for (int i = 0; i < count; i++) {
@@ -175,16 +189,21 @@ unsigned long timestamp_now_nsec_old = 0;
 
 void odometry_cal(void) {
     int d_encoder = myBaseSensorData.encoder - myBaseSensorData.encoder_old;
-    float d_x, d_y, d_r, d_th;
+    float d_x, d_y, d_r;
+    long d_th;
 
     // d_encoder = (left_diff + right_diff)/2
     d_r = d_encoder * myOdomCaculateData.distance_ratio;
-
+    
     if (motor_speed == 0) {
         d_th = 0;
     } else {
         d_th = DEG2RAD((steering_angle - STEER_NEUTRAL_ANGLE) * 0.008);
+        // d_th = theta - theta_old;
+        // ROS_INFO("d_th : %.16lf", d_th);
+        // theta_old = theta;
     }
+    
     d_x = d_r * cos(myOdomCaculateData.oriention - d_th);
     d_y = d_r * sin(myOdomCaculateData.oriention - d_th);
     myOdomCaculateData.position_x += d_x; //unit: m
@@ -204,7 +223,7 @@ void odometry_cal(void) {
 }
 
 int main(int argc, char ** argv) {
-    char buf[2];
+    char buf[8];
     ros::init(argc, argv, "happytby_bringup");
 
     ros::NodeHandle n;
@@ -214,12 +233,13 @@ int main(int argc, char ** argv) {
     ros::param::get("~cmd_vel_topic", cmd_vel_topic);
     ros::param::get("~odom_pub_topic", odom_pub_topic);
 
-    ros::Subscriber sub1 = n.subscribe("/ackermann_cmd", 10, &CarControlCallback);
-    ros::Subscriber sub3 = n.subscribe<sensor_msgs::LaserScan>( "/scan", 1000, &scanCallback);
+    ros::Subscriber cmd_vel_sub = n.subscribe("/ackermann_cmd", 10, &CarControlCallback);
+    ros::Subscriber scan_sub = n.subscribe("/scan", 1000, &scanCallback);
+    ros::Subscriber imu_sub = n.subscribe("/imu", 10, &ImuCallback);
 
     // ros::Publisher sonar_pub = n.advertise<sensor_msgs::Range>( "/RangeSonar", 10);
     ros::Publisher odom_pub = n.advertise<nav_msgs::Odometry>(odom_pub_topic, 20);
-    
+
     ////////////////   sonar _sensor ////////////////////
     sensor_msgs::Range sonar_msg;
     sonar_msg.header.frame_id = frameid;
@@ -240,13 +260,13 @@ int main(int argc, char ** argv) {
     } else {
         ROS_INFO_STREAM("I2C is Connected");
     }
-    
+
     int count = 0;
     static tf::TransformBroadcaster odom_broadcaster;
     geometry_msgs::TransformStamped odom_trans;
     nav_msgs::Odometry odom;
     geometry_msgs::Quaternion odom_quat;
-
+    
     //covariance matrix
     float covariance[36] = {
         0.01, 0, 0, 0, 0, 0, // covariance on gps_x
@@ -262,22 +282,8 @@ int main(int argc, char ** argv) {
     }
 
     while (ros::ok()) {
-        std_msgs::String msg;
-        std_msgs::Int16 steerangle;
-        std_msgs::Int16 carspeed;
-        std::stringstream ss;
-        std::string data;
-        data = std::to_string(steering_angle);
-
-        steerangle.data = steering_angle;
-        carspeed.data = motor_speed;
-        ss << data;
-        msg.data = ss.str();
-        ROS_INFO("Steer : %s", msg.data.c_str());
-
-        data = std::to_string(motor_speed);
-        msg.data = data;
-        ROS_INFO("Speed : %s", msg.data.c_str());
+        ROS_INFO("Steer : %d", steering_angle);
+        ROS_INFO("Speed : %d", motor_speed);
         
         if ((steering_angle != steering_angle_old) || (motor_speed != motor_speed_old)) {
             // write
@@ -288,7 +294,6 @@ int main(int argc, char ** argv) {
             protocol_data[4] = (motor_speed & 0xff00) >> 8;
             protocol_data[5] = (motor_speed & 0x00ff);
             protocol_data[6] = '*';
-
             write(file_I2C, protocol_data, 7);
 
             // read
@@ -355,7 +360,7 @@ int main(int argc, char ** argv) {
                 // ROS_INFO("bbb %d\n", (temp[0]<<24)+(temp[1]<<16)+(temp[2]<<8)+temp[3]);
                 // ROS_INFO("encoder %d \n", encoder_temp);
             }
-            encoder = encoder_temp;
+            encoder = -encoder_temp;
 
         }
 
@@ -441,10 +446,13 @@ int main(int argc, char ** argv) {
         odom.twist.twist.angular.x = odom.twist.twist.angular.y = 0;
         odom_broadcaster.sendTransform(odom_trans);
         odom_pub.publish(odom);
-
+        
         loop_rate.sleep();
         ros::spinOnce();
+        // ROS_INFO("theta : %.16lf", theta);
+        // ROS_INFO("theta_old : %.16lf", theta_old);
         ++count;
+        
     }
 
     motor_speed = 0;

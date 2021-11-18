@@ -1,10 +1,10 @@
 <launch>
-  <!--node pkg="tf" type="static_transform_publisher" name="odom_broadcaster" args="1 1 0 0 0 0 map odom 10"/-->
+  <node pkg="tf" type="static_transform_publisher" name="odom_broadcaster" args="1 1 0 0 0 0 map odom 10"/>
   <node pkg="tf" type="static_transform_publisher" name="base_link_broadcaster" args="0 0 0.02 0 0 0 base_footprint base_link 10"/>
   <!--node pkg="tf" type="static_transform_publisher" name="sonar_broadcaster" args="0.2 0 0 0 0 0 base_link sonar_range 10" /-->
   
   <node pkg="happytby_bringup" type="cmd_vel_to_ackermann_drive.py" name="cmd_vel_to_ackermann_drive" output="screen"/>
-  <!--node pkg="happytby_bringup" type="happytby_bringup_node" name="happytby_bringup_node" output="screen"/--> 
+  <node pkg="happytby_bringup" type="happytby_bringup_node" name="happytby_bringup_node" output="screen"/>
   
   <arg name="model"/>
   <arg name="gui" default="False"/>  
@@ -19,4 +19,5 @@
     <param name="port" type="string" value="/dev/sc_mini"/>
     <param name="baud_rate" type="int" value="115200"/>
   </node-->
+  <include file="$(find handsfree_ros_imu)/launch/handsfree_imu.launch"/>
 </launch>

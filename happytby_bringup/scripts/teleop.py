@@ -11,7 +11,7 @@ velocity = 0
 steering = 0
 breakcontrol = 1
 gear = 0
-MAX_Velocity = 255
+MAX_Velocity = 0.3
 
 publisher = rospy.Publisher('/cmd_vel', Twist,queue_size=1)
 
@@ -35,7 +35,7 @@ def teleop():
     while not rospy.is_shutdown():
         key = getkey()
         if key == 'w':
-            velocity = velocity + 5 # 5
+            velocity = velocity + 0.05 # 5
             steering = 0 
             status = status + 1
         elif key == 's':
@@ -49,7 +49,7 @@ def teleop():
             steering = steering - 0.035 # 2
             status = status + 1
         elif key == 'x':
-            velocity = velocity - 5 # 5
+            velocity = velocity - 0.05 # 5
             steering = 0
             status = status + 1
         else:

@@ -1,300 +1,343 @@
-//opencv_line_detect.cpp
-//-I/usr/local/include/opencv4/opencv -I/usr/local/include/opencv4
+#include <ros/ros.h> 
 
-#include <ros/ros.h>
-#include "std_msgs/String.h"
-#include "std_msgs/Int16.h"
-#include <image_transport/image_transport.h>
-#include <cv_bridge/cv_bridge.h>
+#include <sensor_msgs/Image.h> 
 
-#include <opencv2/opencv.hpp>
-#include <iostream>
-#include <stdio.h> 
-#include <string.h> 
-#include <stdio.h>
-#include <unistd.h>   
-#include <stdint.h>   
-#include <stdlib.h>  
-#include <errno.h>
+#include <image_transport/image_transport.h> 
 
-using namespace cv;
-using namespace std;
+#include <opencv2/highgui/highgui.hpp> 
 
-#define IMG_Width     1280
-#define IMG_Height    720
+#include <cv_bridge/cv_bridge.h> 
 
-#define USE_DEBUG  1   // 1 Debug  사용
-#define USE_CAMERA 1   // 1 CAMERA 사용  0 CAMERA 미사용
+#include "geometry_msgs/Twist.h" 
 
-#define ROI_CENTER_Y  250
-#define ROI_WIDTH     50
+#define ASSIST_BASE_LINE 280 
 
-#define NO_LINE 20
-#define DEG2RAD(x) (M_PI/180.0)*x
-#define RAD2DEG(x) (180.0/M_PI)*x
+#define ASSIST_BASE_WIDTH 80
 
-std::string gstreamer_pipeline (int capture_width, int capture_height, int display_width, int display_height, int framerate, int flip_method) {
-    return "nvarguscamerasrc ! video/x-raw(memory:NVMM), width=(int)" + std::to_string(capture_width) + ", height=(int)" +
-           std::to_string(capture_height) + ", format=(string)NV12, framerate=(fraction)" + std::to_string(framerate) +
-           "/1 ! nvvidconv flip-method=" + std::to_string(flip_method) + " ! video/x-raw, width=(int)" + std::to_string(display_width) + ", height=(int)" +
-           std::to_string(display_height) + ", format=(string)BGRx ! videoconvert ! video/x-raw, format=(string)BGR ! appsink";
-}
+#define PERSPECTIVE_IMG_W 640
 
+#define PERSPECTIVE_IMG_H 480
 
-Mat mat_image_org_color;  // Image 저장하기 위한 변수
-Mat mat_image_org_gray;
-Mat mat_image_roi;
-Mat mat_image_canny_edge;
-Mat mat_image_canny_edge_roi;
-
-Scalar GREEN(0,255,0);
-Scalar RED(0,0,255);
-Scalar BLUE(255,0,0);
-Scalar YELLOW(0,255,255);
-
-
-int img_width = 640;
-int img_height = 480;
-
-Mat Region_of_Interest(Mat image, Point *points)
-{
-  Mat img_mask =Mat::zeros(image.rows,image.cols,CV_8UC1);	 
-  
-  Scalar mask_color = Scalar(255,255,255);
-  const Point* pt[1]={ points };	    
-  int npt[] = { 4 };
-  cv::fillPoly(img_mask,pt,npt,1,Scalar(255,255,255),LINE_8);
-  Mat masked_img;	
-  bitwise_and(image,img_mask,masked_img);
-  
-  return masked_img;
-}
-
-Mat Region_of_Interest_crop(Mat image, Point *points)
-{
-   Mat img_roi_crop;	
-
-   Rect bounds(0,0,image.cols,image.rows);	 
-   Rect r(points[0].x,points[0].y,image.cols, points[2].y-points[0].y);  
-   //printf("%d %d %d %d\n",points[0].x,points[0].y,points[2].x, points[2].y-points[0].y);
-   //printf("%d  %d\n", image.cols, points[2].y-points[0].y);
-
-   img_roi_crop = image(r & bounds);
-   
-   return img_roi_crop;
-}
-
-Mat Canny_Edge_Detection(Mat img)
-{
-   Mat mat_blur_img, mat_canny_img;
-   blur(img, mat_blur_img, Size(3,3));	
-   Canny(mat_blur_img,mat_canny_img, 70,150,3);
-	
-   return mat_canny_img;	
-}
-
-int main(int argc, char **argv)
-{
-	
-   int i;
-   int steer_angle_new, steer_angle_old;
-   
-   steer_angle_new = steer_angle_old =0; 
  
-   float gradient[NO_LINE]  = {0,};
-   float intersect[NO_LINE] = {0,};
-   float intersect_base[NO_LINE]  = {0,};
-   float c_x_sum=0;	
-   
-   int capture_width = 1280 ;
-   int capture_height = 720 ;
-   int display_width = 640 ;
-   int display_height = 360 ;
-   int framerate = 60 ;
-   int flip_method = 2 ;
+
+ 
+
+using namespace cv; 
+
+ 
+
+using namespace std; 
+
+ 
+
+geometry_msgs::Twist msg; 
+
+Mat Region_of_Interest_crop(Mat image, Point* points)
+
+{
+
+    Mat img_roi_crop;
+
+ 
+
+    Rect bounds(0, 0, image.cols, image.rows);
+
+    Rect r(points[0].x, points[0].y, image.cols, points[2].y - points[0].y);
+
     
-   int img_width  = 640;
-   int img_height = 360;
-   if(USE_CAMERA == 0) img_height = 480;	 
-   
-   std::cout << "OpenCV version : " << CV_VERSION << std::endl;
-  // return 1;
-    
-   std::string pipeline = gstreamer_pipeline(capture_width,
-	capture_height,
-	display_width,
-	display_height,
-	framerate,
-	flip_method);
-	
-    std::cout << "Using pipeline: \n\t" << pipeline << "\n";
- 
-   VideoCapture cap(pipeline, cv::CAP_GSTREAMER);
- 
-   Point points[4];  // ROI(Region of Interest) 
- 
-   if (!cap.isOpened()) 
-   {
-	cerr << "에러 - 카메라를 열 수 없습니다.\n";		
-	return -1;	
-   }
-   
-   cap.read(mat_image_org_color);
-   img_width = mat_image_org_color.size().width ;
-   img_height = mat_image_org_color.size().height;
-	
-   if(USE_CAMERA == 0) printf("Image size[%3d,%3d]\n", capture_width,capture_height);	
-  
-  
-   ros::init(argc, argv, "ros_opencv_line_detect");
 
-  /**
-   * NodeHandle is the main access point to communications with the ROS system.
-   * The first NodeHandle constructed will fully initialize this node, and the last
-   * NodeHandle destructed will close down the node.
-   */
-   ros::NodeHandle nh;
-   
-   ros::Publisher car_control_pub_cmd = nh.advertise<std_msgs::Int16>("Car_Control_cmd/SteerAngle_Int16", 10);
-   
-   std_msgs::Int16 cmd_steering_msg;      
-   cmd_steering_msg.data  = 0;
-   
-   std::cout << "OpenCV version : " << CV_VERSION << std::endl;
-  
-   ros::Rate loop_rate(10);
-   int count = 0;
-   int line_count = 0;
-   float  c[NO_LINE] = {0.0, };
-   float  d[NO_LINE] = {0.0, };
-   float  line_center_x = 0.0; 
-   float  steering_conversion = 0.07;
-   int inter_sect_x[NO_LINE] = {0, };
-   int inter_sect_group[NO_LINE] = {0, };  
-  ////////////////  image transport ///////////////////////////
-   image_transport::ImageTransport it(nh);
-   image_transport::Publisher pub = it.advertise("camera/image", 1);
-   /* 
-   namedWindow("Camera Image", WINDOW_NORMAL);
-   resizeWindow("Camera Image", IMG_Width/2,IMG_Height/2);
-   moveWindow("Camera Image", 10, 10); 
-                             
-   namedWindow("Gray Image window", WINDOW_NORMAL);   
-   resizeWindow("Gray Image window", img_width,img_height);   
-   moveWindow("Gray Image window", 700, 10);
-   
-   namedWindow("ROI Image window", WINDOW_NORMAL);   
-   resizeWindow("ROI Image window", img_width,img_height);   
-   moveWindow("ROI Image window", 10, 500);
     
-   namedWindow("Edge Image window", WINDOW_NORMAL);   
-   resizeWindow("Edge Image window", img_width,img_height);   
-   moveWindow("Edge Image window", 700, 500);
-    */
-   points[0] = Point(0,ROI_CENTER_Y-ROI_WIDTH);
-   points[1] =  Point(0,ROI_CENTER_Y+ROI_WIDTH);
-   points[2] =  Point(img_width,ROI_CENTER_Y+ROI_WIDTH);
-   points[3] =  Point(img_width,ROI_CENTER_Y-ROI_WIDTH);
-   
-   sensor_msgs::ImagePtr img_msg = cv_bridge::CvImage(std_msgs::Header(), "bgr8", mat_image_org_color).toImageMsg();
-       
-   while (ros::ok())
-   { 
-    /**
-     * This is a message object. You stuff it with data, and then publish it.
-     */
-     if(USE_CAMERA == 1)  cap.read(mat_image_org_color);
-     else                 mat_image_org_color = imread("./img/line_1.jpg", IMREAD_COLOR);
-     cvtColor(mat_image_org_color, mat_image_org_gray, cv::COLOR_RGB2GRAY);        // color to gray conversion  
-     mat_image_roi = Region_of_Interest_crop(mat_image_org_gray,points);    // ROI 영역을 추출함      
-     mat_image_canny_edge = Canny_Edge_Detection(mat_image_roi);
-      
-     vector<Vec4i> linesP;
-     HoughLinesP(mat_image_canny_edge, linesP, 1, CV_PI/180,30,30,40);
-     //printf("Line Number : %3d\n", (int)linesP.size());
-     
-     line_count = line_center_x = 0.0;
-	  
-	  for(int i=0; i<linesP.size();i++)
-	  {
-		float intersect = 0.0;
-		
-		if(i>=NO_LINE) break;
-		Vec4i L= linesP[i];
-		/*
-		int cx1 = linesP[i][0];
-		int cy1 = linesP[i][1];
-		int cx2 = linesP[i][2];
-		int cy2 = linesP[i][3];
-		*/
-		c[i] =  (L[2]-L[0])/(L[3]-L[1]);
-		d[i] = L[0]-c[i] *L[1] ;
-		if(fabs(c[i])< DEG2RAD(65))
-		{
-		
-		   intersect = c[i]*(float)ROI_WIDTH +d[i];
-		   line_center_x += intersect;
-		   inter_sect_x[line_count]=intersect;
-		   line_count++;
-		   line(mat_image_org_color,Point(L[0],L[1]+ROI_CENTER_Y-ROI_WIDTH),Point(L[2],L[3]+ROI_CENTER_Y-ROI_WIDTH), Scalar(0,0,255), 2, LINE_AA);		   
-	    }
-		
-		if(USE_DEBUG==1)
-		 {
-		   printf("L[%d] :[%3d, %3d] , [%3d , %3d] \n",i,  L[0],L[1], L[2],L[3]); 
-		 //printf("x[%d] = [%6.3f] *y + [%6.3f] \n",i, c[i],d[i]); 
-		   printf("x[%d] = [%4.2f] *y + [%4.2f] \n", i,c[i],d[i]); 
-		   printf("intersect =[%f] [%f]\n\n", intersect, line_center_x);
-		  //printf("H :[%3d , %3d] , [%3d , %3d] \n", cx1,cy1, cx2,cy2);
-	     }
-	   } 
-	   
-	  
-      
-     if(line_count >0)
-     {
-        
-        line_center_x = line_center_x / (float)linesP.size() - img_width/2;
-	
-        steer_angle_new = (int)( line_center_x*steering_conversion);  //스티어링 조정값 계수 수정 필요 
-        printf("c_x_sum = %f  %d\n",line_center_x , steer_angle_new);
-	    printf("\n\n\n");
-        cmd_steering_msg.data  = steer_angle_new;      //
-        
-        if(steer_angle_old !=  steer_angle_new) car_control_pub_cmd.publish(cmd_steering_msg);
-	
-	    line(mat_image_org_color,Point(0,ROI_CENTER_Y),Point(img_width,ROI_CENTER_Y), Scalar(0,255,0), 1, LINE_AA);	
-	    line(mat_image_org_color,Point((int)line_center_x+img_width/2,ROI_CENTER_Y-ROI_WIDTH),Point((int)line_center_x+img_width/2,ROI_CENTER_Y+ROI_WIDTH), Scalar(255,255,0), 1, LINE_AA);	
-	   
-     }
-      
-     else
-     {
-         
-     }
-       steer_angle_old =  steer_angle_new ;     
-     
-      img_msg = cv_bridge::CvImage(std_msgs::Header(), "bgr8", mat_image_org_color).toImageMsg();  
-      pub.publish(img_msg);
-     // imshow("Camera Image", mat_image_org_color);
-    /*imshow("Gray Image window", mat_image_org_gray); 
-      imshow("ROI Image window",mat_image_roi);
-      imshow("Edge Image window",mat_image_canny_edge_roi);  
-    */
-    if (waitKey(25) >= 0)
-      break;
-     
-     ros::spinOnce();
 
-    loop_rate.sleep();
-    ++count;
+ 
+
+    img_roi_crop = image(r & bounds);
+
+ 
+
+    return img_roi_crop;
+
+}
+
+ 
+
+void ImageCallbak(const sensor_msgs::Image::ConstPtr &img) 
+
+{
+
+  double spdCurve = 0; 
+
+  cv_bridge::CvImagePtr cv_ptr; 
+
+ 
+
+  ROS_INFO("Image(%d, %d)", img->width, img->height);
+
+ 
+
+  try {
+
+    cv_ptr = cv_bridge::toCvCopy(img, sensor_msgs::image_encodings::RGB8);
+
+  } catch (cv_bridge::Exception &e) {
+
+    ROS_ERROR("Error to convert!");
+
+    return;
+
   }
 
-  //destroyWindow("Camera Image");
-  //destroyWindow("Gray Image window");
-  //destroyWindow("ROI Image window");
-  //destroyWindow("Edge Image window");
-   return 0;
+  Point points[4];
+
+  points[0] = Point(0, ASSIST_BASE_LINE - ASSIST_BASE_WIDTH);
+
+  points[1] = Point(0, ASSIST_BASE_LINE + ASSIST_BASE_WIDTH);
+
+  points[2] = Point(640, ASSIST_BASE_LINE + ASSIST_BASE_WIDTH);
+
+  points[3] = Point(640, ASSIST_BASE_LINE - ASSIST_BASE_WIDTH);
+
+ 
+
+  double sum=0; 
+
+  int cnt=0; 
+
+  Mat src = cv_ptr->image; 
+
+  Mat dst, color_dst,gray; 
+
+  
+
+  Mat adapt; 
+
+ 
+
+  cvtColor( src, gray, COLOR_BGR2GRAY ); 
+
+  adaptiveThreshold(gray, adapt, 255,ADAPTIVE_THRESH_MEAN_C,THRESH_BINARY_INV,7,10); 
+
+  adapt=Region_of_Interest_crop(adapt, points);
+
+  GaussianBlur(adapt,adapt,Size(7,7),0); 
+
+  Canny( adapt, dst, 170, 250, 3 ); 
+
+  
+
+  
+
+ 
+
+  cvtColor( dst, color_dst, COLOR_GRAY2BGR );
+
+ 
+
+  vector<Vec3f> circles; 
+
+  HoughCircles(dst, circles, CV_HOUGH_GRADIENT, 2, dst.rows / 4, 50, 150); 
+
+ 
+
+  // if (circles.size()>2){ 
+
+  //   msg.linear.x = 0; 
+
+  //   msg.angular.z = 0; 
+
+  //   return;
+
+  // }
+
+ 
+
+  vector<Vec4i> lines; 
+
+  HoughLinesP( dst, lines, 1, CV_PI/180, 110, 100, 50);
+
+  for( size_t i = 0; i < lines.size(); i++ )
+
+  { 
+
+      double m=(double(lines[i][3]-lines[i][1]))/double((lines[i][2]-lines[i][0])); 
+
+ 
+
+      if(m<-0.5 || 0.5<m) 
+
+      {
+
+        line( color_dst, Point(lines[i][0], lines[i][1]),
+
+        Point( lines[i][2], lines[i][3]), Scalar(0,0,255), 3, 8 );
+
+        sum+=m; 
+
+        cnt++; 
+
+      }
+
+  }
+
+ 
+
+ 
+
+ROS_INFO("count of m = %d\n", cnt);
+
+ 
+
+  if(cnt>=10){ 
+
+    ROS_INFO("sum of m = %f\n", sum);
+
+ 
+
+    spdCurve = sum / 60; 
+
+    msg.linear.x = 0.15; 
+
+  }
+
+  else if(cnt>=8 && cnt<10){ 
+
+    ROS_INFO("sum of m = %f\n", sum);
+
+ 
+
+    spdCurve = sum / 40; 
+
+    msg.linear.x = 0.08; 
+
+  }
+
+  else if(cnt<8 && cnt>1){ 
+
+    int i,j;
+
+    int x1=0,y1=0,x2=0,y2=0, pCnt=0, y_mean=0;
+
+    double mCurve;
+
+ 
+
+    for(pCnt=0, i=290, j=479; j>0; j--){
+
+      if(dst.at<uchar>(j,i) > 127){ pCnt ++; if(pCnt >= 3){x2=i; y2=j; break;}}
+
+      if(j==101){x2=320; y2=0; break;}
+
+    }
+
+    ROS_INFO("%d, %d, %d\n", x2, y2, pCnt);
+
+    for(pCnt=0, i=450, j=479; j>0; j--){
+
+      if(dst.at<uchar>(j,i) > 127){ pCnt ++; if(pCnt >= 3){x1=i; y1=j; break;}}
+
+      if(j==101){x1=480; y1=0; break;}
+
+    }
+
+    ROS_INFO("%d, %d %d\n", x1, y1, pCnt);
+
+ 
+
+    y_mean=(y1+y2)/2;
+
+    ROS_INFO("%d\n", y_mean);
+
+    if(y2-y1){mCurve = double(x2-x1)/double(y2-y1);}
+
+    ROS_INFO("inverse of m = %f\n", mCurve);
+
+    if(mCurve>0)
+
+    {
+
+      spdCurve=mCurve/5; 
+
+    }
+
+    else if(mCurve<0)
+
+    {
+
+      spdCurve=mCurve/5;   
+
+    }
+
+    if(200-y_mean > 0){
+
+      msg.linear.x = 0.1+double((165-y_mean))/double(2000);
+
+    }
+
+    else{
+
+      msg.linear.x = 0.1+double((165-y_mean))/double(1800);
+
+    }
+
+    ROS_INFO("linear.x_spd = %f\n",0.1+double(190-y_mean)/double(600));
+
+  }
+  // else 
+  // {
+  //   spdCurve=0;
+  //   msg.linear.x=1;
+  // }
+
+ 
+
+  
+
+  
+
+
+  imshow( "Detected Lines",color_dst);
+
+ 
+
+  msg.angular.z = spdCurve;
+
+  waitKey(1);
+
 }
 
  
+
+int main(int argc, char **argv)
+
+{
+
+ 
+
+  ros::init(argc, argv, "main"); 
+
+  ros::NodeHandle nh; 
+
+ 
+
+  image_transport::ImageTransport it(nh); 
+
+  image_transport::Subscriber sub_img = it.subscribe("/jetson_camera_node/image_raw", 1, ImageCallbak); 
+
+ 
+
+  ros::Publisher pub = nh.advertise<geometry_msgs::Twist>("cmd_vel", 10);
+
+  ros::Rate rate(10);
+
+  ROS_INFO("Starting to move forward"); 
+
+  while (ros::ok()) { 
+
+          pub.publish(msg); 
+
+          ros::spinOnce(); 
+
+          rate.sleep();
+
+          }
+
+}

@@ -25,12 +25,19 @@ def cmd_callback(data):
   msg.header.stamp = rospy.Time.now()
   msg.header.frame_id = frame_id
   msg.drive.steering_angle = steering
-  msg.drive.speed = v
+  msg.drive.speed = linear_speed_to_motor_input(v)
   
   pub.publish(msg)
 
 def linear_speed_to_motor_input(linear_speed):
-    pass
+  max_speed = 0.3
+  if linear_speed >= max_speed:
+    linear_speed = max_speed
+  elif linear_speed <= -max_speed:
+    linear_speed = -max_speed
+
+  return int(linear_speed*(255/max_speed))
+
 
 if __name__ == '__main__': 
   try:
@@ -38,7 +45,7 @@ if __name__ == '__main__':
     rospy.init_node('cmd_vel_to_ackermann_drive')
     twist_cmd_topic = rospy.get_param('~twist_cmd_topic', '/cmd_vel') 
     ackermann_cmd_topic = rospy.get_param('~ackermann_cmd_topic', '/ackermann_cmd')
-    wheelbase = rospy.get_param('~wheelbase', 0.2)
+    wheelbase = rospy.get_param('~wheelbase', 0.257)
     frame_id = rospy.get_param('~frame_id', 'odom')
     
     rospy.Subscriber(twist_cmd_topic, Twist, cmd_callback, queue_size=1)

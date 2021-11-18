@@ -166,9 +166,7 @@ void receiveEvent(int howMany)
   {
     Steering_Angle = a[2]*256 + a[3];
     
-    // Steering_Angle = 80;
-       
-    if( ((a[4]&0x80) >>7)  ==1 )  //check MSB bit is 1 -> negative
+    if( ((a[4]&0x80) >> 7)  == 1 )  //check MSB bit is 1 -> negative
     {     
       Motor_Speed = ((255- a[4])+(256-a[5]))*-1;           
     }
@@ -177,11 +175,9 @@ void receiveEvent(int howMany)
       Motor_Speed = a[4]*256 + a[5];
     }
     steering_control();
-    
   }
 
-  if( (a[0]=='#') && (a[1] == 'S') && (a[6] == '*'))
-  { 
+  if( (a[0]=='#') && (a[1] == 'S') && (a[6] == '*') ) { 
     sensor_flag = 1;
   }
 }
@@ -195,10 +191,6 @@ void requestEvent()
   s[0]='#';
   s[1]= (temp&0xff00)>>8; // sonar
   s[2]= (temp&0x00ff); // sonar
-  // s[3]= (encoderPos&0xff000000)>>24;    // encoder MSB 8bit
-  // s[4]= (encoderPos&0x00ff0000)>>16;
-  // s[5]= (encoderPos&0x0000ff00)>>8;
-  // s[6]= (encoderPos&0x000000ff);        // encoder LSB 8bit
   s[3]= count_1;    // encoder MSB 8bit
   s[4]= count_2;
   s[5]= count_3;
@@ -226,9 +218,7 @@ void setup()
   delay(200);
 }
 
-void loop()
-{
-
+void loop() {
   now = millis();
   int timeChange = (now - lastTime);
   if(timeChange >= 100)
@@ -237,17 +227,17 @@ void loop()
       readEncoder(1);
   }
   // steering_control();
-  if(Motor_Speed > 0) motor_control(1,Motor_Speed);
-  else if(Motor_Speed < 0) motor_control(-1,-Motor_Speed);
-  else motor_control(0,0);
-  // motor_control(1, Motor_Speed);
+  if(Motor_Speed > 0) motor_control(1, Motor_Speed);
+  else if(Motor_Speed < 0) motor_control(-1, -Motor_Speed);
+  else motor_control(0, 0);
+  
   sonar_sensor_read();
   if(debug == 1)
   {   
     ///////////// Steering Servo  ////////////// 
-    //Serial.print("Sonar : ");
-    //Serial.print(sonar_d);
-    //Serial.print("cm");    
+    Serial.print("Sonar : ");
+    Serial.print(sonar_d);
+    Serial.print("cm");    
 
     ///////////// Steering Servo  /////////////
     Serial.print("  Steering Angle : ");
