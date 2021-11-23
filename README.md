@@ -7,9 +7,6 @@ Autonomus Driving Car Stack benchmarked [turtlebot3](https://github.com/ROBOTIS-
 Sponsored by Mando, aMaps, Halla Univ.
 
 
-
-**Use `catkin build` instead of `catkin_make`**
-
 ## Implements In Project
 
 - Computer Vision Developments

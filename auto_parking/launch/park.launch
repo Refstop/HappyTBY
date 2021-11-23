@@ -1,2 +1,5 @@
 <launch>
+  <node pkg="auto_parking" type="parking.py" name="parking" output="screen">
+    <param name="parallel" type="Bool" value="False"/>
+  </node>
 </launch>

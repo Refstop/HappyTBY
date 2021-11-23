@@ -22,9 +22,9 @@ find_package(catkin REQUIRED COMPONENTS
 
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
-set(OpenCV_INCLUDE_DIRS "/usr/include/opencv;/usr/include")
+set(OpenCV_INCLUDE_DIRS "/usr/include/opencv4;/usr/include")
 
-find_package(OpenCV REQUIRED)
+find_package(OpenCV 4 REQUIRED)
  
 
 catkin_package(
@@ -32,7 +32,7 @@ catkin_package(
   # LIBRARIES opencv_line_detection
   CATKIN_DEPENDS rospy roscpp std_msgs
   # DEPENDS system_lib
-  DEPENDS OpenCV
+  DEPENDS OpenCV 4
 )
 
 ###########
@@ -57,7 +57,7 @@ link_directories(${OpenCV_LIB_DIR})
 ## With catkin_make all packages are built within a single CMake context
 ## The recommended prefix ensures that target names across packages don't collide
 add_executable(ros_opencv_line_detection2_node src/opencv_line_detect2.cpp)
-
+##add_executable(AA_code src/temp.cpp)
 ## Add cmake target dependencies of the library
 ## as an example, code may need to be generated before libraries
 ## either from message generation or dynamic reconfigure

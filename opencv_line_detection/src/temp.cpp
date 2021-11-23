@@ -26,8 +26,8 @@ using namespace std;
 #define USE_DEBUG  1   // 1 Debug  사용
 #define USE_CAMERA 1   // 1 CAMERA 사용  0 CAMERA 미사용
 
-#define ROI_CENTER_Y  300
-#define ROI_WIDTH     60
+#define ROI_CENTER_Y  280
+#define ROI_WIDTH    80
 
 #define NO_LINE 20
 
@@ -153,7 +153,7 @@ int main(int argc, char **argv)
    */
    ros::NodeHandle nh;
    
-   ros::Publisher car_control_pub_cmd = nh.advertise<std_msgs::Int16>("Car_Control_cmd/SteerAngle_Int16", 10);
+   ros::Publisher car_control_pub_cmd = nh.advertise<std_msgs::Int16>("/cmd_vel", 10);
    
    std_msgs::Int16 cmd_steering_msg;      
    cmd_steering_msg.data  = 0;
@@ -170,7 +170,7 @@ int main(int argc, char **argv)
      
   ////////////////  image transport ///////////////////////////
    image_transport::ImageTransport it(nh);
-   image_transport::Publisher pub = it.advertise("camera/image", 1);
+   image_transport::Publisher pub = it.advertise("/main_camera/image_raw", 1);
    
    namedWindow("Camera Image", WINDOW_NORMAL);
    resizeWindow("Camera Image", IMG_Width/2,IMG_Height/2);

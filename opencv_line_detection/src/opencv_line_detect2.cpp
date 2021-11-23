@@ -4,7 +4,7 @@
 
 #include <image_transport/image_transport.h> 
 
-#include <opencv2/highgui/highgui.hpp> 
+#include <opencv2/highgui/highgui.hpp>
 
 #include <cv_bridge/cv_bridge.h> 
 
@@ -12,8 +12,7 @@
 
 #define ASSIST_BASE_LINE 280 
 
-#define ASSIST_BASE_WIDTH 80
-
+#define ASSIST_BASE_WIDTH 140
 #define PERSPECTIVE_IMG_W 640
 
 #define PERSPECTIVE_IMG_H 480
@@ -75,7 +74,6 @@ void ImageCallbak(const sensor_msgs::Image::ConstPtr &img)
  
 
   try {
-
     cv_ptr = cv_bridge::toCvCopy(img, sensor_msgs::image_encodings::RGB8);
 
   } catch (cv_bridge::Exception &e) {
@@ -85,6 +83,7 @@ void ImageCallbak(const sensor_msgs::Image::ConstPtr &img)
     return;
 
   }
+
 
   Point points[4];
 
@@ -96,34 +95,31 @@ void ImageCallbak(const sensor_msgs::Image::ConstPtr &img)
 
   points[3] = Point(640, ASSIST_BASE_LINE - ASSIST_BASE_WIDTH);
 
- 
-
   double sum=0; 
 
   int cnt=0; 
 
   Mat src = cv_ptr->image; 
 
-  Mat dst, color_dst,gray; 
+  Mat dst, color_dst,gray;
+
+  // imshow( "Detected Lines",src);
+
 
   
-
   Mat adapt; 
 
- 
-
+//  flip(src,src,1);
+//  flip(src,src,0);
   cvtColor( src, gray, COLOR_BGR2GRAY ); 
 
   adaptiveThreshold(gray, adapt, 255,ADAPTIVE_THRESH_MEAN_C,THRESH_BINARY_INV,7,10); 
 
-  adapt=Region_of_Interest_crop(adapt, points);
-
-  GaussianBlur(adapt,adapt,Size(7,7),0); 
-
+ // adapt=Region_of_Interest_crop(adapt, points);
+  ROS_INFO("Image(%d, %d)", img->width, img->height);
+  //GaussianBlur(adapt, adapt, Size(7,7), 0); 
+  ROS_INFO("Image(%d, %d)", img->width, img->height);
   Canny( adapt, dst, 170, 250, 3 ); 
-
-  
-
   
 
  
@@ -132,9 +128,9 @@ void ImageCallbak(const sensor_msgs::Image::ConstPtr &img)
 
  
 
-  vector<Vec3f> circles; 
+ // vector<Vec3f> circles; 
 
-  HoughCircles(dst, circles, CV_HOUGH_GRADIENT, 2, dst.rows / 4, 50, 150); 
+ // HoughCircles(dst, circles, CV_HOUGH_GRADIENT, 2, dst.rows / 4, 50, 150); 
 
  
 
@@ -152,11 +148,14 @@ void ImageCallbak(const sensor_msgs::Image::ConstPtr &img)
 
   vector<Vec4i> lines; 
 
-  HoughLinesP( dst, lines, 1, CV_PI/180, 110, 100, 50);
+  HoughLinesP( dst, lines, 1, CV_PI/180, 30, 15, 10);
 
   for( size_t i = 0; i < lines.size(); i++ )
 
   { 
+    if(lines.size()>20){
+      return;
+    }
 
       double m=(double(lines[i][3]-lines[i][1]))/double((lines[i][2]-lines[i][0])); 
 
@@ -186,7 +185,7 @@ ROS_INFO("count of m = %d\n", cnt);
 
  
 
-  if(cnt>=10){ 
+  if(cnt>=8){ 
 
     ROS_INFO("sum of m = %f\n", sum);
 
@@ -194,11 +193,11 @@ ROS_INFO("count of m = %d\n", cnt);
 
     spdCurve = sum / 60; 
 
-    msg.linear.x = 0.15; 
+    msg.linear.x = 0.3; 
 
   }
 
-  else if(cnt>=8 && cnt<10){ 
+  else if(cnt<=7 && cnt>4){ 
 
     ROS_INFO("sum of m = %f\n", sum);
 
@@ -206,11 +205,11 @@ ROS_INFO("count of m = %d\n", cnt);
 
     spdCurve = sum / 40; 
 
-    msg.linear.x = 0.08; 
+    msg.linear.x = 0.15; 
 
   }
 
-  else if(cnt<8 && cnt>1){ 
+  else if(cnt<=3 && cnt>0){ 
 
     int i,j;
 
@@ -222,7 +221,7 @@ ROS_INFO("count of m = %d\n", cnt);
 
     for(pCnt=0, i=290, j=479; j>0; j--){
 
-      if(dst.at<uchar>(j,i) > 127){ pCnt ++; if(pCnt >= 3){x2=i; y2=j; break;}}
+      if(dst.at<uchar>(j,i) > 50){ pCnt ++; if(pCnt >= 3){x2=i; y2=j; break;}}
 
       if(j==101){x2=320; y2=0; break;}
 
@@ -232,7 +231,7 @@ ROS_INFO("count of m = %d\n", cnt);
 
     for(pCnt=0, i=450, j=479; j>0; j--){
 
-      if(dst.at<uchar>(j,i) > 127){ pCnt ++; if(pCnt >= 3){x1=i; y1=j; break;}}
+      if(dst.at<uchar>(j,i) > 50){ pCnt ++; if(pCnt >= 3){x1=i; y1=j; break;}}
 
       if(j==101){x1=480; y1=0; break;}
 
@@ -254,7 +253,7 @@ ROS_INFO("count of m = %d\n", cnt);
 
     {
 
-      spdCurve=mCurve/5; 
+      spdCurve=mCurve/2; 
 
     }
 
@@ -262,7 +261,7 @@ ROS_INFO("count of m = %d\n", cnt);
 
     {
 
-      spdCurve=mCurve/5;   
+      spdCurve=mCurve/2;   
 
     }
 
@@ -294,9 +293,9 @@ ROS_INFO("count of m = %d\n", cnt);
   
 
 
-  imshow( "Detected Lines",color_dst);
+  // imshow( "Detected Lines",color_dst);
 
- 
+  imwrite("tby.jpg",color_dst);
 
   msg.angular.z = spdCurve;
 
@@ -320,7 +319,7 @@ int main(int argc, char **argv)
 
   image_transport::ImageTransport it(nh); 
 
-  image_transport::Subscriber sub_img = it.subscribe("/jetson_camera_node/image_raw", 1, ImageCallbak); 
+  image_transport::Subscriber sub_img = it.subscribe("/main_camera/image_raw", 1, ImageCallbak); 
 
  
 

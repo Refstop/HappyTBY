@@ -113,8 +113,11 @@ private:
 
 		while (is_running_.load())
 		{
+			
 			if (cap.read(img.image))
 			{
+				// cv::flip(img.image,img.image,1);
+			    // cv::flip(img.image,img.image,0);
 				img.header.stamp = ros::Time::now() - ros::Duration(delay_);
 				cam_info_.header.stamp = img.header.stamp;
 				pub_.publish(*img.toImageMsg(), cam_info_);

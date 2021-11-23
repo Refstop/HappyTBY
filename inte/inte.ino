@@ -1,10 +1,9 @@
-
 #define debug 1
 ///////////////////// Steering Servo Control /////////////////////
 #define RC_SERVO_PIN 7
 #define NEURAL_ANGLE 90
-#define LEFT_STEER_ANGLE  -30
-#define RIGHT_STEER_ANGLE  30
+#define LEFT_STEER_ANGLE -40
+#define RIGHT_STEER_ANGLE 40
 
 #include <Servo.h>
 Servo   Steeringservo;
@@ -159,7 +158,13 @@ void receiveEvent(int howMany)
   a[4] = Wire.read();
   a[5] = Wire.read();
   a[6] = Wire.read();
-
+  //Serial.print(a[0]); Serial.print(" ");
+  //Serial.print(a[1]); Serial.print(" ");
+  //Serial.print(a[2]); Serial.print(" ");
+  //Serial.print(a[3]); Serial.print(" ");
+  //Serial.print(a[4]); Serial.print(" ");
+  //Serial.print(a[5]); Serial.print(" ");
+  //Serial.println(a[6]);
   
    
   if( (a[0]=='#') && (a[1] == 'C') && (a[6] == '*'))
@@ -187,7 +192,7 @@ void requestEvent()
 {
   unsigned char s[8] = {0,};
   int temp;
-  temp = sonar_d*10;
+  temp = sonar_d;
   s[0]='#';
   s[1]= (temp&0xff00)>>8; // sonar
   s[2]= (temp&0x00ff); // sonar
@@ -227,11 +232,19 @@ void loop() {
       readEncoder(1);
   }
   // steering_control();
-  if(Motor_Speed > 0) motor_control(1, Motor_Speed);
-  else if(Motor_Speed < 0) motor_control(-1, -Motor_Speed);
-  else motor_control(0, 0);
-  
   sonar_sensor_read();
+  sonar_d = 16;
+  if(sonar_d < 15) {
+    motor_control(0, 0);
+  }
+  else {
+    if(Motor_Speed > 0) motor_control(1, Motor_Speed);
+    else if(Motor_Speed < 0) motor_control(-1, -Motor_Speed);
+    else motor_control(0, 0);
+  }
+  
+  
+  
   if(debug == 1)
   {   
     ///////////// Steering Servo  ////////////// 

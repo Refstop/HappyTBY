@@ -30,7 +30,7 @@
     </node>
 
     <!-- camera visualization markers -->
-    <node pkg="clever" type="camera_markers" ns="main_camera" name="main_camera_markers">
+    <!--node pkg="clever" type="camera_markers" ns="main_camera" name="main_camera_markers">
         <param name="scale" value="3.0"/>
-    </node>
+    </node-->
 </launch>

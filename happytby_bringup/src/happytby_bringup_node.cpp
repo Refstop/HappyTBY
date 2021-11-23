@@ -40,7 +40,7 @@ static const char * deviceName = "/dev/i2c-0";
 
 #define WHEEL_RADIUS 0.0365
 #define COOUNT_PER_REV 2600
-int Base_Speed = 0;
+int Base_Speed = 80;
 
 //////////////////////////////// Odometry ////////////////////////////
 
@@ -73,7 +73,7 @@ long encoder = 0;
 
 unsigned char protocol_data[7] = {'#', 0, 0, 0, 0, 0, '*'}; // start byte '#' - end bytte '*'
 char frameid[] = "/sonar_range";
-long theta, theta_old = 0;
+long d_theta = 0, theta = 0, theta_old = 0.0;
 
 int file_I2C;
 
@@ -106,10 +106,10 @@ void close_I2C(int fd) {
 void CarControlCallback(const ackermann_msgs::AckermannDriveStamped & msg) {
     steering_angle = (int)msg.drive.steering_angle;
 
-    if (steering_angle >= 30 + STEER_NEUTRAL_ANGLE)
-        steering_angle = STEER_NEUTRAL_ANGLE + 30;
-    if (steering_angle <= -30 + STEER_NEUTRAL_ANGLE)
-        steering_angle = STEER_NEUTRAL_ANGLE - 30;
+    if (steering_angle >= 40 + STEER_NEUTRAL_ANGLE)
+        steering_angle = STEER_NEUTRAL_ANGLE + 40;
+    if (steering_angle <= -40 + STEER_NEUTRAL_ANGLE)
+        steering_angle = STEER_NEUTRAL_ANGLE - 40;
     
     Base_Speed = (int)msg.drive.speed;
     motor_speed = Base_Speed;
@@ -131,7 +131,11 @@ void ImuCallback(const sensor_msgs::Imu & msg) {
     double roll, pitch, yaw;
     tf::Matrix3x3(T_quaternion).getRPY(roll, pitch, yaw);
     theta = yaw;
+    d_theta = theta - theta_old;
+    theta_old = theta;
     // ROS_INFO("theta : %.16f", theta);
+    // ROS_INFO("theta_old : %.16f", theta_old);
+    // ROS_INFO("d_theta : %.16f", d_theta);
 }
 
 void scanCallback(const sensor_msgs::LaserScan::ConstPtr & scan) {
@@ -197,7 +201,8 @@ void odometry_cal(void) {
     
     if (motor_speed == 0) {
         d_th = 0;
-    } else {
+    }
+    else {
         d_th = DEG2RAD((steering_angle - STEER_NEUTRAL_ANGLE) * 0.008);
         // d_th = theta - theta_old;
         // ROS_INFO("d_th : %.16lf", d_th);
@@ -234,10 +239,10 @@ int main(int argc, char ** argv) {
     ros::param::get("~odom_pub_topic", odom_pub_topic);
 
     ros::Subscriber cmd_vel_sub = n.subscribe("/ackermann_cmd", 10, &CarControlCallback);
-    ros::Subscriber scan_sub = n.subscribe("/scan", 1000, &scanCallback);
+    // ros::Subscriber scan_sub = n.subscribe("/scan", 1000, &scanCallback);
     ros::Subscriber imu_sub = n.subscribe("/imu", 10, &ImuCallback);
 
-    // ros::Publisher sonar_pub = n.advertise<sensor_msgs::Range>( "/RangeSonar", 10);
+    ros::Publisher sonar_pub = n.advertise<sensor_msgs::Range>( "/RangeSonar", 10);
     ros::Publisher odom_pub = n.advertise<nav_msgs::Odometry>(odom_pub_topic, 20);
 
     ////////////////   sonar _sensor ////////////////////
@@ -246,7 +251,7 @@ int main(int argc, char ** argv) {
     sonar_msg.radiation_type = sensor_msgs::Range::ULTRASOUND;
     sonar_msg.field_of_view = (30.0 / 180.0) * 3.14;
     sonar_msg.min_range = 0.0;
-    sonar_msg.max_range = 1.550; //[unit :m]
+    sonar_msg.max_range = 1.50; //[unit :m]
 
     //////////////////  odometry  ////////////////////
     std::string odom_frame_id = "odom";
@@ -282,9 +287,6 @@ int main(int argc, char ** argv) {
     }
 
     while (ros::ok()) {
-        ROS_INFO("Steer : %d", steering_angle);
-        ROS_INFO("Speed : %d", motor_speed);
-        
         if ((steering_angle != steering_angle_old) || (motor_speed != motor_speed_old)) {
             // write
             protocol_data[0] = '#';
@@ -298,7 +300,7 @@ int main(int argc, char ** argv) {
 
             // read
             read(file_I2C, buf, 8);
-            sonar = (buf[1] * 256 + buf[2]) / 1000.0;
+            sonar = (buf[1] * 256 + buf[2]) / 100.0;
 
             encoder = encoder_temp = 0;
             long temp[4] = {0};
@@ -324,17 +326,18 @@ int main(int argc, char ** argv) {
             encoder = encoder_temp;
         }
         else {
+            ROS_INFO("Speed : %d", motor_speed);
             protocol_data[0] = '#';
-            protocol_data[1] = 'S';
-            protocol_data[2] = (steering_angle_old & 0xff00) >> 8;
-            protocol_data[3] = (steering_angle_old & 0x00ff);
-            protocol_data[4] = (motor_speed_old & 0xff00) >> 8;
-            protocol_data[5] = (motor_speed_old & 0x00ff);
+            protocol_data[1] = 'C';
+            protocol_data[2] = (steering_angle & 0xff00) >> 8;
+            protocol_data[3] = (steering_angle & 0x00ff);
+            protocol_data[4] = (motor_speed & 0xff00) >> 8;
+            protocol_data[5] = (motor_speed & 0x00ff);
             protocol_data[6] = '*';
 
             write(file_I2C, protocol_data, 7);
             read(file_I2C, buf, 8);
-            sonar = (buf[1] * 256 + buf[2]) / 1000.0;
+            sonar = (buf[1] * 256 + buf[2]) / 100.0;
 
             encoder = encoder_temp = 0;
             long temp[4] = {0};
@@ -346,9 +349,6 @@ int main(int argc, char ** argv) {
                 temp[3] = (long)buf[6];
 
                 encoder_temp = (temp[0] << 24) + (temp[1] << 16) + (temp[2] << 8) + (temp[3]);
-                // ROS_INFO("%d %d %d %d\n", (temp[0]<<24), (temp[1]<<16), (temp[2]<<8), temp[3]);
-                // ROS_INFO("aaa %d\n", (temp[0]<<24)+(temp[1]<<16)+(temp[2]<<8)+temp[3]);
-                // ROS_INFO("encoder %d \n", encoder_temp);
             }
             else {
                 temp[1] = (long)buf[4];
@@ -356,9 +356,6 @@ int main(int argc, char ** argv) {
                 temp[3] = (long)buf[6];
 
                 encoder_temp = (temp[0] << 24) + (temp[1] << 16) + (temp[2] << 8) + (temp[3]);
-                // ROS_INFO("%d %d %d %d\n", (temp[0]<<24)+(temp[1]<<16)+(temp[2]<<8)+temp[3]);
-                // ROS_INFO("bbb %d\n", (temp[0]<<24)+(temp[1]<<16)+(temp[2]<<8)+temp[3]);
-                // ROS_INFO("encoder %d \n", encoder_temp);
             }
             encoder = -encoder_temp;
 
@@ -367,54 +364,53 @@ int main(int argc, char ** argv) {
         steering_angle_old = steering_angle;
         motor_speed_old = motor_speed;
         
-        if (DEBUG == 1) {
-            printf("sonar %6.3lf \n", sonar);
-            printf("encoder temp %ld \n", encoder_temp);
-            printf("encoder %ld \n", encoder);
+        if (DEBUG_ROS_INFO == 1) {
+            ROS_INFO("Steer : %d", steering_angle_old);
+            ROS_INFO("Sonar : %.3lf", sonar);
         }
 
         //////////////////// sonar obstacle detectioin ////////////////
-        if ((sonar > 0) && (sonar <= Sonar_Detect_Range)) {
+        // if ((sonar > 0) && (sonar <= Sonar_Detect_Range)) {
+        //     ROS_INFO("Sonar Obstacle detection : %.3lf", sonar);
+        //     protocol_data[0] = '#';
+        //     protocol_data[1] = 'C';
+        //     protocol_data[4] = 0;
+        //     protocol_data[5] = 0;
+        //     // protocol_data[6] = '*';
+        //     write(file_I2C, protocol_data, 7);
+        //     read(file_I2C, buf, 8);
 
-            ROS_INFO("Sonar Obstacle detection : %4.1lf", sonar);
-            protocol_data[0] = '#';
-            protocol_data[1] = 'C';
-            protocol_data[4] = 0;
-            protocol_data[5] = 0;
-            write(file_I2C, protocol_data, 7);
-            read(file_I2C, buf, 8);
+        //     sonar = (buf[1] * 256 + buf[2]) / 100.0;
 
-            sonar = (buf[2] * 256 + buf[3]) / 1000.0;
+        //     encoder = encoder_temp = 0;
+        //     long temp[4] = {0};
+        //     temp[0] = buf[3];
 
-            encoder = encoder_temp = 0;
-            long temp[4] = {0};
-            temp[0] = buf[3];
+        //     if (((buf[3] & 0x80) >> 7) == 1) { //check MSB bit is 1 -> negative
+        //         temp[0] = (long)(255 - buf[3]);
+        //         temp[1] = (long)(255 - buf[4]);
+        //         temp[2] = (long)(255 - buf[5]);
+        //         temp[3] = (long)(256 - buf[6]);
 
-            if (((buf[3] & 0x80) >> 7) == 1) { //check MSB bit is 1 -> negative
-                temp[0] = (long)(255 - buf[3]);
-                temp[1] = (long)(255 - buf[4]);
-                temp[2] = (long)(255 - buf[5]);
-                temp[3] = (long)(256 - buf[6]);
+        //         encoder_temp = -(temp[0] + temp[1] + temp[2] + temp[3]);
+        //     }
+        //     else {
+        //         temp[1] = (long)buf[4];
+        //         temp[2] = (long)buf[5];
+        //         temp[3] = (long)buf[6];
 
-                encoder_temp = -(temp[0] + temp[1] + temp[2] + temp[3]);
-            }
-            else {
-                temp[1] = (long)buf[4];
-                temp[2] = (long)buf[5];
-                temp[3] = (long)buf[6];
-
-                encoder_temp = temp[0] + temp[1] + temp[2] + temp[3];
-            }
-            encoder = encoder_temp;
-        } else {
-            motor_speed = Base_Speed;
-        }
+        //         encoder_temp = temp[0] + temp[1] + temp[2] + temp[3];
+        //     }
+        //     encoder = encoder_temp;
+        // }
+        // else {
+        //     motor_speed = Base_Speed;
+        // }
 
 
         sonar_msg.header.stamp = ros::Time::now();
         sonar_msg.range = sonar;
-        // sonar_pub.publish(sonar_msg);
-        // ROS_INFO("Sonar :%5.1lf", sonar);
+        sonar_pub.publish(sonar_msg);
 
         myBaseSensorData.encoder = encoder;
         odometry_cal();
@@ -449,8 +445,6 @@ int main(int argc, char ** argv) {
         
         loop_rate.sleep();
         ros::spinOnce();
-        // ROS_INFO("theta : %.16lf", theta);
-        // ROS_INFO("theta_old : %.16lf", theta_old);
         ++count;
         
     }
