@@ -56,14 +56,21 @@ link_directories(${OpenCV_LIB_DIR})
 ## Declare a C++ executable
 ## With catkin_make all packages are built within a single CMake context
 ## The recommended prefix ensures that target names across packages don't collide
-add_executable(ros_opencv_line_detection2_node src/opencv_line_detect2.cpp)
+
 ##add_executable(AA_code src/temp.cpp)
 ## Add cmake target dependencies of the library
 ## as an example, code may need to be generated before libraries
 ## either from message generation or dynamic reconfigure
+add_executable(ros_opencv_line_detection2_node src/opencv_line_detect2.cpp)
+add_executable(temp_node src/temp.cpp)
 add_dependencies(ros_opencv_line_detection2_node ${ros_opencv_line_detection_node_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+add_dependencies(temp_node ${ros_opencv_line_detection_node_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
 target_link_libraries(ros_opencv_line_detection2_node
+   ${catkin_LIBRARIES}
+   ${OpenCV_LIBRARIES}
+)
+target_link_libraries(temp_node
    ${catkin_LIBRARIES}
    ${OpenCV_LIBRARIES}
 )
