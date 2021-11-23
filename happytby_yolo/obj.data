@@ -1,5 +1,0 @@
-classes = 9
-train = happytby/train.txt
-valid = happytby/val.txt
-names = happytby/obj.names
-backup = happytby/backup1

@@ -9,14 +9,14 @@ def convert_trans_rot_vel_to_steering_angle(v, omega, wheelbase):
     return math.pi/2 * 180/math.pi
 
   
-  # max_omega = 0.3
-  # if omega >= max_omega:
-  #   omega = max_omega
-  # elif omega <= -max_omega:
-  #   omega = -max_omega
-  # return (-omega/0.3*40 + math.pi/2) * 180/math.pi
-  radius = v / omega
-  return (-math.atan(wheelbase / radius) + math.pi/2) * 180/math.pi
+  max_omega = 0.3
+  if omega >= max_omega:
+    omega = max_omega
+  elif omega <= -max_omega:
+    omega = -max_omega
+  return (-omega/0.3*40 + math.pi/2) * 180/math.pi
+  # radius = v / omega
+  # return (-math.atan(wheelbase / radius) + math.pi/2) * 180/math.pi
   
 
 

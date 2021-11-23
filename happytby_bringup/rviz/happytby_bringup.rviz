@@ -109,8 +109,6 @@ Visualization Manager:
           Value: false
         link_lidar:
           Value: false
-        map:
-          Value: false
         odom:
           Value: true
         rear_wheel_l:
@@ -123,24 +121,23 @@ Visualization Manager:
       Show Axes: true
       Show Names: true
       Tree:
-        map:
-          odom:
-            base_footprint:
-              base_link:
-                front_wheel_l:
-                  {}
-                front_wheel_r:
-                  {}
-                link_cam:
-                  {}
-                link_imu:
-                  {}
-                link_lidar:
-                  {}
-                rear_wheel_l:
-                  {}
-                rear_wheel_r:
-                  {}
+        odom:
+          base_footprint:
+            base_link:
+              front_wheel_l:
+                {}
+              front_wheel_r:
+                {}
+              link_cam:
+                {}
+              link_imu:
+                {}
+              link_lidar:
+                {}
+              rear_wheel_l:
+                {}
+              rear_wheel_r:
+                {}
       Update Interval: 0
       Value: true
     - Alpha: 0.5
@@ -168,9 +165,7 @@ Visualization Manager:
       Enabled: true
       Invert Rainbow: false
       Max Color: 255; 255; 255
-      Max Intensity: 127
       Min Color: 0; 0; 0
-      Min Intensity: 127
       Name: LaserScan
       Position Transformer: XYZ
       Queue Size: 10
@@ -187,7 +182,7 @@ Visualization Manager:
   Global Options:
     Background Color: 48; 48; 48
     Default Light: true
-    Fixed Frame: map
+    Fixed Frame: odom
     Frame Rate: 30
   Name: root
   Tools:
@@ -210,7 +205,7 @@ Visualization Manager:
   Value: true
   Views:
     Current:
-      Angle: -1.6149998903274536
+      Angle: -0.21499983966350555
       Class: rviz/TopDownOrtho
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
@@ -220,11 +215,11 @@ Visualization Manager:
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Scale: 368.4041442871094
+      Scale: 116.5919418334961
       Target Frame: <Fixed Frame>
       Value: TopDownOrtho (rviz)
-      X: 6.366602897644043
-      Y: 1.1802581548690796
+      X: 1.2392997741699219
+      Y: -0.026695474982261658
     Saved: ~
 Window Geometry:
   Displays:
