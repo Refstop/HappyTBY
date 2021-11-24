@@ -2,7 +2,7 @@
 #---standard pioneer footprint---
 #---(in meters)---
 #footprint: [ [0.254, -0.0508], [0.1778, -0.0508], [0.1778, -0.1778], [-0.1905, -0.1778], [-0.254, 0], [-0.1905, 0.1778], [0.1778, 0.1778], [0.1778, 0.0508], [0.254, 0.0508] ]
-footprint: [ [-0.1,-0.125], [0.5,-0.125], [0.5,0.125], [-0.1,0.125] ]
+footprint: [ [-0.18, -0.11], [-0.18, 0.11], [0.18, 0.11], [0.18, -0.11] ]
 
 
 transform_tolerance: 0.2
@@ -16,7 +16,7 @@ obstacle_layer:
  track_unknown_space: false
  combination_method: 1
 
- observation_sources: laser_scan_sensor
+ observation_sources: link_lidar
  laser_scan_sensor: {data_type: LaserScan, topic: scan, marking: true, clearing: true}
 
 
