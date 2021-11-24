@@ -6,6 +6,8 @@ Panels:
       Expanded:
         - /Global Options1
         - /Status1
+        - /TF1
+        - /TF1/Frames1
       Splitter Ratio: 0.5
     Tree Height: 781
   - Class: rviz/Selection
@@ -94,29 +96,29 @@ Visualization Manager:
       Enabled: true
       Frame Timeout: 15
       Frames:
-        All Enabled: true
+        All Enabled: false
         base_footprint:
           Value: true
         base_link:
-          Value: true
+          Value: false
         front_wheel_l:
-          Value: true
+          Value: false
         front_wheel_r:
-          Value: true
+          Value: false
         link_cam:
-          Value: true
+          Value: false
         link_imu:
-          Value: true
+          Value: false
         link_lidar:
-          Value: true
+          Value: false
         map:
           Value: true
         odom:
           Value: true
         rear_wheel_l:
-          Value: true
+          Value: false
         rear_wheel_r:
-          Value: true
+          Value: false
       Marker Scale: 1
       Name: TF
       Show Arrows: true
@@ -142,6 +144,34 @@ Visualization Manager:
                 rear_wheel_r:
                   {}
       Update Interval: 0
+      Value: true
+    - Alpha: 0.699999988079071
+      Class: rviz/Map
+      Color Scheme: map
+      Draw Behind: false
+      Enabled: true
+      Name: Map
+      Topic: /move_base/global_costmap/costmap
+      Unreliable: false
+      Use Timestamp: false
+      Value: true
+    - Alpha: 0.699999988079071
+      Class: rviz/Map
+      Color Scheme: map
+      Draw Behind: false
+      Enabled: true
+      Name: Map
+      Topic: /move_base/local_costmap/costmap
+      Unreliable: false
+      Use Timestamp: false
+      Value: true
+    - Alpha: 1
+      Class: rviz/Polygon
+      Color: 25; 255; 0
+      Enabled: true
+      Name: Polygon
+      Topic: /move_base/local_costmap/footprint
+      Unreliable: false
       Value: true
   Enabled: true
   Global Options:
@@ -180,11 +210,11 @@ Visualization Manager:
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Scale: 241.67274475097656
+      Scale: 673.2874755859375
       Target Frame: <Fixed Frame>
       Value: TopDownOrtho (rviz)
-      X: 3.398287057876587
-      Y: -0.23507146537303925
+      X: 2.1964797973632812
+      Y: -0.12544980645179749
     Saved: ~
 Window Geometry:
   Displays:

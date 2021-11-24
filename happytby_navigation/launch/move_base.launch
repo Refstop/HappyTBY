@@ -13,6 +13,13 @@
     <rosparam file="$(find happytby_navigation)/param/global_costmap_params.yaml" command="load" />
     <rosparam file="$(find happytby_navigation)/param/move_base_params.yaml" command="load" />
     <rosparam file="$(find happytby_navigation)/param/teb_local_planner_params.yaml" command="load" />
+    <param name="planner_frequency" value="1.0" />
+    <param name="planner_patience" value="5.0" />
+
+    <param name="controller_frequency" value="5.0" />
+    <param name="controller_patience" value="15.0" />
+
+    <param name="clearing_rotation_allowed" value="false" /> <!-- Our carlike robot is not able to rotate in place -->
     <remap from="cmd_vel" to="$(arg cmd_vel_topic)"/>
     <remap from="odom" to="$(arg odom_topic)"/>
   </node>

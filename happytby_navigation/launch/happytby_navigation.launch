@@ -1,0 +1,17 @@
+<launch>
+  <!-- Arguments -->
+  <arg name="map_file" default="/home/jetbot/ros/AA_ws/src/happytby/happytby_navigation/map/map.yaml"/>
+  <arg name="open_rviz" default="true"/>
+  
+  <node pkg="rviz" type="rviz" name="rviz" required="true" args="-d $(find happytby_navigation)/rviz/happytby_navigation.rviz"/>
+  <node pkg="map_server" name="map_server" type="map_server" args="$(arg map_file)"/>
+  <!--include file="$(find iris_lama_ros)/launch/loc2d.launch"/-->
+  <node pkg="amcl" type="amcl" name="amcl" output="screen">
+    <rosparam file="$(find happytby_navigation)/param/amcl_params.yaml" command="load" />
+    <param name="initial_pose_x"            value="0"/>
+    <param name="initial_pose_y"            value="0"/>
+    <param name="initial_pose_a"            value="0"/>
+  </node>
+  <include file="$(find happytby_navigation)/launch/move_base.launch"/>
+
+</launch>
