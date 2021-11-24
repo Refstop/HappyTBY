@@ -75,19 +75,19 @@ class ParkingNode(object):
         # print "travelTime : ", math.pi/(2.0*omega)
         # print "degree : ", omega * math.pi/(2.0*omega)
         self.drive_arc(0.3, 3, rospy.Duration(1.1), 1)
-	self.drive_arc(0.3, 0, rospy.Duration(0.5), -1)
-
-	self.drive_arc(0.3, 3, rospy.Duration(1.1), 1)
-	self.drive_arc(0.3, 0, rospy.Duration(0.6), -1)
-
-	self.drive_arc(0.3, 3, rospy.Duration(1.2), 1)
-	self.drive_arc(0.3, 0, rospy.Duration(0.6), -1)
-
-	self.drive_arc(0.3, 3, rospy.Duration(1.1), 1)
-	self.drive_arc(0.3, 0, rospy.Duration(0.5), -1)
-
-	self.drive_arc(0.3, 3, rospy.Duration(1.3), 1)
-	self.drive_arc(0.3, 0, rospy.Duration(0.5), -1)
+	    self.drive_arc(0.3, 0, rospy.Duration(0.5), -1)
+    
+	    self.drive_arc(0.3, 3, rospy.Duration(1.1), 1)
+	    self.drive_arc(0.3, 0, rospy.Duration(0.6), -1)
+    
+	    self.drive_arc(0.3, 3, rospy.Duration(1.2), 1)
+	    self.drive_arc(0.3, 0, rospy.Duration(0.6), -1)
+    
+	    self.drive_arc(0.3, 3, rospy.Duration(1.1), 1)
+	    self.drive_arc(0.3, 0, rospy.Duration(0.5), -1)
+    
+	    self.drive_arc(0.3, 3, rospy.Duration(1.3), 1)
+	    self.drive_arc(0.3, 0, rospy.Duration(0.5), -1)
 
 
         # Speed = 0.2
