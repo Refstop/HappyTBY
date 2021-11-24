@@ -41,14 +41,13 @@ class ParkingNode(object):
         self.publisher.publish(STOP)
         
     
-    def align_with_origin(self):
-        """After stopping next to the second parked Neato, 
-        this function will align us properly so that we can successfully drive our circle."""
-        dist = self.widthOfSpot/2 + self.radius
-        travelTime = rospy.Duration(dist/0.2 + 0.5) # 0.2 is speed
-        self.drive_arc(0.2, 0, travelTime, -1)
-
-        self.twist = STOP
+    # def align_with_origin(self):
+    #     """After stopping next to the second parked Neato, 
+    #     this function will align us properly so that we can successfully drive our circle."""
+    #     dist = self.widthOfSpot/2 + self.radius
+    #     travelTime = rospy.Duration(dist/0.2 + 0.5) # 0.2 is speed
+    #     self.drive_arc(0.2, 0, travelTime, -1)
+    #     self.twist = STOP
 
         
     def drive_arc(self, Speed, omega, travelTime, sign):
@@ -62,55 +61,23 @@ class ParkingNode(object):
 
 
     def park(self):
+        # self.drive_arc(0.3, 0, rospy.Duration(0.2), 1)
+        # self.drive_arc(0.3, 1, rospy.Duration(1.8), 1)
+        # self.drive_arc(0.3, 1, rospy.Duration(1.2), -1) 
 
-        # Speed = 0.3
-        # degree = 40
-        # self.radius = self.deg2r(degree)
-        # omega = Speed / self.radius
-        # travelTime = rospy.Duration(math.pi/(2.0*omega) + 3.)
-        # # self.align_with_origin()
-        # self.drive_arc(Speed, omega, travelTime, 1)
-        # print "omega : ", omega
-        # print "T : ", 2.0 * math.pi/ omega
-        # print "travelTime : ", math.pi/(2.0*omega)
-        # print "degree : ", omega * math.pi/(2.0*omega)
-        
-        # self.drive_arc(0.3, 3, rospy.Duration(1.1), 1)
-	    # self.drive_arc(0.3, 0, rospy.Duration(0.5), -1)
+        # self.drive_arc(0.3, 1, rospy.Duration(1.6), 1)
+        # self.drive_arc(0.3, 1, rospy.Duration(0.58), -1)
 
-	    # self.drive_arc(0.3, 3, rospy.Duration(1.1), 1)
-    	# self.drive_arc(0.3, 0, rospy.Duration(0.6), -1)
+        # self.drive_arc(0.3, 1, rospy.Duration(1.5), 1)
+        # self.drive_arc(0.3, 1, rospy.Duration(0.65), -1)
 
-	    # self.drive_arc(0.3, 3, rospy.Duration(1.2), 1)
-	    # self.drive_arc(0.3, 0, rospy.Duration(0.6), -1)
-
-	    # self.drive_arc(0.3, 3, rospy.Duration(1.1), 1)
-	    # self.drive_arc(0.3, 0, rospy.Duration(0.5), -1)
-
-	    # self.drive_arc(0.3, 3, rospy.Duration(1.3), 1)
-	    # self.drive_arc(0.3, 0, rospy.Duration(0.5), -1)
-
-        self.drive_arc(0.3, 3, rospy.Duration(1.16667), 1)
-	    self.drive_arc(0.3, 3, rospy.Duration(0.58), -1)
-
-	    self.drive_arc(0.3, 3, rospy.Duration(1.16667), 1)
-    	self.drive_arc(0.3, 3, rospy.Duration(0.58), -1)
-
-	    self.drive_arc(0.3, 3, rospy.Duration(1.16667), 1)
-	    self.drive_arc(0.3, 3, rospy.Duration(0.58), -1)
-
-        # Speed = 0.2
-        # dist = self.radius + LENGTH_OF_SPOT / 2
-        # travelTime = rospy.Duration(dist/Speed)
-        # self.drive_arc(Speed, 0, travelTime, 1)
-        # self.twist = STOP
-
-
+        self.drive_arc(0.3, 1, rospy.Duration(5.8), 1)
 
     def deg2r(self, degree):
         radius = math.sqrt(math.pow(lw/2, 2)+ math.pow(lw * 1/math.tan(math.radians(degree)), 2))
         print "radius : ", radius
         return radius
+
         
     def run(self):
         """ This function is the main run loop."""

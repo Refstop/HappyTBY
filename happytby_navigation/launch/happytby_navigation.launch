@@ -1,6 +1,6 @@
 <launch>
   <!-- Arguments -->
-  <arg name="map_file" default="/home/sparo/data/map/rb_bldg_3rd_edited_edited2.yaml"/>
+  <arg name="map_file" default="/home/jetbot/ros/AA_ws/src/happytby/happytby_navigation/map/map.yaml"/>
   <arg name="open_rviz" default="true"/>
   <arg name="move_forward_only" default="true"/>
   <arg name="trans_tol"  default="0.2"/>
