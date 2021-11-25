@@ -61,11 +61,21 @@ link_directories(${OpenCV_LIB_DIR})
 ## Add cmake target dependencies of the library
 ## as an example, code may need to be generated before libraries
 ## either from message generation or dynamic reconfigure
-add_executable(ros_opencv_line_detection2_node src/opencv_line_detect2.cpp)
-add_dependencies(ros_opencv_line_detection2_node ${ros_opencv_line_detection_node_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
-
-target_link_libraries(ros_opencv_line_detection2_node
+add_executable(ros_opencv_line_detection_node src/opencv_line_detect.cpp)
+add_dependencies(ros_opencv_line_detection_node ${ros_opencv_line_detection_node_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+target_link_libraries(ros_opencv_line_detection_node
    ${catkin_LIBRARIES}
    ${OpenCV_LIBRARIES}
+)
+add_executable(overtaking_node src/overtaking.cpp)
+add_dependencies(overtaking_node ${overtaking_node_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+target_link_libraries(overtaking_node
+   ${catkin_LIBRARIES}
+   ${OpenCV_LIBRARIES}
+)
+
+catkin_install_python(PROGRAMS
+  scripts/traffic_light.py scripts/traffic_sign.py
+  DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
 

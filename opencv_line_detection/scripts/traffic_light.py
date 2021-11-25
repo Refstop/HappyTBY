@@ -6,6 +6,7 @@ import sys
 import math
 from cv_bridge import CvBridge, CvBridgeError
 from sensor_msgs.msg import Image
+from std_msgs.msg import Bool
 import rospy
 import roslib
 from geometry_msgs.msg import Vector3, Twist
@@ -13,13 +14,20 @@ from geometry_msgs.msg import Vector3, Twist
 class TrafficLight:
     def __init__(self):
         rospy.Subscriber('main_camera/image_raw', Image, self.ImageCallback)
-        self.pub = rospy.Publisher('cmd_vel', Twist, queue_size=10)
+        rospy.Subscriber('isTL', Bool, self.TLCallback)
+        self.pub = rospy.Publisher('cmd_vel_tl', Twist, queue_size=10)
         self.STOP = Twist(linear=Vector3(0,0,0), angular=Vector3(0,0,0))
         self.SLOW = Twist(linear=Vector3(0.1,0,0), angular=Vector3(0,0,0))
         self.STRAIGHT = Twist(linear=Vector3(0.3,0,0), angular=Vector3(0,0,0))
         self.TURNLEFT = Twist(linear=Vector3(0.3,0,0), angular=Vector3(0,0,-1))
+        self.isTL = False
+
+    def TLCallback(self, data):
+        self.isTL = True
 
     def ImageCallback(self, data):
+        if(not self.isTL): return
+
         try:
             src = self.bridge.imgmsg_to_cv2(data, "bgr8")
         except CvBridgeError as e:

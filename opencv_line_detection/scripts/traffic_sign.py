@@ -15,14 +15,14 @@ from darknet_ros_msgs.msg import BoundingBoxes
 
 class traffic_sign:
     def __init__(self):
-        self.img_sub = rospy.Subscriber("/darknet_ros/bounding_boxes",BoundingBoxes,self.imgCallback)
+        self.img_sub = rospy.Subscriber("/main_camera/image_raw",Image,self.imgCallback)
         self.darknet_sub = rospy.Subscriber("/darknet_ros/bounding_boxes",BoundingBoxes,self.Callback)
         self.cmd_vel_pub = rospy.Publisher("cmd_vel_ts", Twist, queue_size=1)
         self.tl_pub = rospy.Publisher("isTL", Bool, queue_size=1)
         self.NoOvertaking_pub = rospy.Publisher("isNoOver", Bool, queue_size=1)
         self.Park_pub = rospy.Publisher("isNoPark", Bool, queue_size=1)
 
-        self.bbox = 10
+        self.bbox = []
         self.cv_image = []
 
     def imgCallback(self, data):
@@ -45,10 +45,10 @@ class traffic_sign:
             self.Park_pub.publish(Bool(False))
         elif bbox.id == 3:
             print('3: Stop')
-            self.cmd_vel_pub.publish(Twist(linear=Vector3(0.0,0.0,0.0), angular=Vector3(0.0,0.0,0.0)))
+            self.cmd_vel_pub.publish(Twist(linear=Vector3(0.0,0.0,0.0), angular=Vector3(0.0,0.0,0.0)), rospy.Duration(3))
         elif bbox.id == 4:
             print('4: Gostraight')
-            self.cmd_vel_pub.publish(Twist(linear=Vector3(0.2,0.0,0.0), angular=Vector3(0.0,0.0,0.0)))
+            self.cmd_vel_pub.publish(Twist(linear=Vector3(0.2,0.0,0.0), angular=Vector3(0.0,0.0,0.0)), rospy.Duration(3))
         elif bbox.id == 5 or bbox.id == 6:
             dx = int((bbox.xr-bbox.xl)/2), dy = int((bbox.yr-bbox.yl)/2)
             left_side = np.sum(self.cv_image[bbox.xl : bbox.xl + dx, bbox.yl + dy : bbox.yr])
@@ -64,12 +64,12 @@ class traffic_sign:
             self.Park_pub.publish(Bool(True))
         elif bbox.id == 8:
             print('8: Cross')
-            self.cmd_vel_pub.publish(Twist(linear=Vector3(0.08,0.0,0.0), angular=Vector3(0.0,0.0,0.0)))
+            self.DriveByTravelTime(Twist(linear=Vector3(0.08,0.0,0.0), angular=Vector3(0.0,0.0,0.0)), rospy.Duration(3))
 
     def DriveByTravelTime(self, vel, travelTime):
         now = rospy.Time.now()
         while rospy.Time.now() - now <= travelTime:
-            self.pub.publish(vel)
+            self.cmd_vel_pub.publish(vel)
 
 if __name__ == '__main__':
     try:
