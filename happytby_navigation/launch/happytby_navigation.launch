@@ -1,6 +1,6 @@
 <launch>
   <!-- Arguments -->
-  <arg name="map_file" default="/home/jetbot/ros/AA_ws/src/happytby/happytby_navigation/map/map.yaml"/>
+  <arg name="map_file" default="/home/jetbot/ros/AA_ws/src/happytby/happytby_navigation/map/4th.yaml"/>
   <arg name="open_rviz" default="true"/>
   
   <node pkg="rviz" type="rviz" name="rviz" required="true" args="-d $(find happytby_navigation)/rviz/happytby_navigation.rviz"/>
