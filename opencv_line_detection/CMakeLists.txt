@@ -74,8 +74,13 @@ target_link_libraries(overtaking_node
    ${OpenCV_LIBRARIES}
 )
 
+##catkin_install_python(PROGRAMS
+##  scripts/traffic_light.py scripts/traffic_sign.py scripts/lane_detection.py
+##  DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+##)
+
 catkin_install_python(PROGRAMS
-  scripts/traffic_light.py scripts/traffic_sign.py
+  scripts/traffic_light.py scripts/traffic_sign.py scripts/lane_detection.py
   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
 

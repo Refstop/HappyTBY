@@ -62,7 +62,7 @@ class overtaking {
                 if(isObstacle) {
                     traveltime = 5;
                     now = ros::Time::now().toSec();
-                    while(ros::Time::now() - now <= traveltime) {
+                    while(ros::Time::now().toSec() - now <= traveltime) {
                         new_vel.angular.z = 0;
                         new_vel.linear.x = 0; 
                         cmd_vel_pub.publish(new_vel);
@@ -84,13 +84,13 @@ class overtaking {
         if(~isObstacle) {
             traveltime = 2;
             now = ros::Time::now().toSec();
-            while(ros::Time::now() - now <= traveltime) {
+            while(ros::Time::now().toSec() - now <= traveltime) {
                 new_vel.angular.z = 1;
                 new_vel.linear.x = 0.3; 
                 cmd_vel_pub.publish(new_vel);
             }
             now = ros::Time::now().toSec();
-            while(ros::Time::now() - now <= traveltime) {
+            while(ros::Time::now().toSec() - now <= traveltime) {
                 new_vel.angular.z = 1;
                 new_vel.linear.x = -0.3; 
                 cmd_vel_pub.publish(new_vel);
@@ -99,7 +99,7 @@ class overtaking {
             chuwalling = true;
         }
     }
-}
+};
     
     
 
