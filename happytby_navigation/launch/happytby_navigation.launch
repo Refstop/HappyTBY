@@ -12,6 +12,9 @@
     <param name="initial_pose_y"            value="0"/>
     <param name="initial_pose_a"            value="0"/>
   </node>
-  <include file="$(find happytby_navigation)/launch/move_base.launch"/>
+  <include file="$(find happytby_navigation)/launch/move_base.launch">
+    <remap from="/cmd_vel" to="/cmd_vel_navi_raw"/>
+  </include>
+  <node pkg="happytby_navigation" name="cmd_vel_changer" type="cmd_vel_changer.py"/>
 
 </launch>
