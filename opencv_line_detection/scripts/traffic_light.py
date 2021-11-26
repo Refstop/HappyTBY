@@ -14,7 +14,7 @@ from geometry_msgs.msg import Vector3, Twist
 
 class TrafficLight:
     def __init__(self):
-        rospy.Subscriber('main_camera/image_raw', Image, self.ImageCallback)
+        self.img_sub = rospy.Subscriber('/main_camera/image_raw', Image, self.ImageCallback)
         rospy.Subscriber('isTL', Bool, self.TLCallback)
         self.pub = rospy.Publisher('cmd_vel_tl', Twist, queue_size=10)
         self.STOP = Twist(linear=Vector3(0,0,0), angular=Vector3(0,0,0))
@@ -22,23 +22,26 @@ class TrafficLight:
         self.STRAIGHT = Twist(linear=Vector3(0.3,0,0), angular=Vector3(0,0,0))
         self.TURNLEFT = Twist(linear=Vector3(0.3,0,0), angular=Vector3(0,0,-1))
         self.isTL = False
+        self.bridge = CvBridge()
 
     def TLCallback(self, data):
         self.isTL = True
 
     def ImageCallback(self, data):
-        if(not self.isTL): return
+        # if(self.isTL): return
 
         try:
             src = self.bridge.imgmsg_to_cv2(data, "bgr8")
         except CvBridgeError as e:
             print(e)
+        print('asd')
+        
         img = cv2.cvtColor(src, cv2.COLOR_BGR2GRAY)
         img = cv2.medianBlur(img, 5)
         row,col,ch=src.shape
         cimg = src.copy() # numpy function
 
-        circles = cv2.HoughCircles(img, cv2.HOUGH_GRADIENT, 1, 50,param1=150, param2=40, minRadius=20, maxRadius=80)
+        circles = cv2.HoughCircles(img, cv2.HOUGH_GRADIENT, 1, 20, param1=150, param2=40, minRadius=20, maxRadius=80)
         position_y = [], position_x = [], radius = []
         if circles is not None:
             a, b, c = circles.shape
@@ -75,6 +78,7 @@ class TrafficLight:
                         # self.vel_msg.linear.x = 1
                         self.DriveByTravelTime(self.STRAIGHT, rospy.Duration(3))
         elif (abs(np.mean(position_y)-position_y[0])<20):
+
             for i in position_x:
                 print(i,"circle's BGR value is",cimg[position_y[0],i])
                 color_x = cimg[position_x[0],i]
@@ -96,6 +100,8 @@ class TrafficLight:
                         print("green")
                         # self.vel_msg.linear.x = 1
                         self.DriveByTravelTime(self.STRAIGHT, rospy.Duration(3))
+        cv2.imshow("detected circles", cimg)
+        cv2.waitKey(0)
 
     def DriveByTravelTime(self, vel, travelTime):
         now = rospy.Time.now()
@@ -107,7 +113,6 @@ if __name__ == '__main__':
 
     while not rospy.is_shutdown():
         try:
-            rospy.init_node('traffic_sign', anonymous=False)
             tl = TrafficLight()
             rospy.spin()
         except rospy.ROSInterruptException:

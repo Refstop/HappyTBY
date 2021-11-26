@@ -61,15 +61,16 @@ class ParkingNode(object):
 
 
     def park(self):
-        self.drive_arc(0.3, 0, rospy.Duration(0.2), 1)
+        self.drive_arc(0.3, 0, rospy.Duration(0.4), 1)
         self.drive_arc(0.3, 1, rospy.Duration(1.8), 1)
-        self.drive_arc(0.3, 1, rospy.Duration(1.2), -1)
+        self.drive_arc(0.3, 1, rospy.Duration(0.9), -1)
 
-        self.drive_arc(0.3, 1, rospy.Duration(1.6), 1)
-        self.drive_arc(0.3, 1, rospy.Duration(0.58), -1)
+        self.drive_arc(0.3, 1, rospy.Duration(1.1), 1)
+        self.drive_arc(0.3, 1, rospy.Duration(2), -1)
 
         self.drive_arc(0.3, 1, rospy.Duration(1.5), 1)
-        self.drive_arc(0.3, 1, rospy.Duration(0.65), -1)
+        self.drive_arc(0.3, 1, rospy.Duration(1), -1)
+        self.drive_arc(0.3, 1, rospy.Duration(1), 1)
 
         # self.drive_arc(0.3, 1, rospy.Duration(5.6), 1)
 

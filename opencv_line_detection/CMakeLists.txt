@@ -18,6 +18,7 @@ find_package(catkin REQUIRED COMPONENTS
   std_msgs
   cv_bridge
   image_transport
+  message_generation
 )
 
 
@@ -25,12 +26,24 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
 set(OpenCV_INCLUDE_DIRS "/usr/include/opencv4;/usr/include")
 
 find_package(OpenCV 4 REQUIRED)
- 
+
+add_message_files(
+  FILES
+  BoundingBox.msg
+  BoundingBoxes.msg
+)
+
+generate_messages(
+  DEPENDENCIES
+  geometry_msgs
+  sensor_msgs
+  std_msgs
+)
 
 catkin_package(
   # INCLUDE_DIRS include
   # LIBRARIES opencv_line_detection
-  CATKIN_DEPENDS rospy roscpp std_msgs
+  CATKIN_DEPENDS rospy roscpp std_msgs message_runtime
   # DEPENDS system_lib
   DEPENDS OpenCV 4
 )

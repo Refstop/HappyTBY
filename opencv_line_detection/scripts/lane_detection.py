@@ -7,12 +7,19 @@ import numpy as np
 from std_msgs.msg import Int32
 from sensor_msgs.msg import CompressedImage, Image
 from cv_bridge import CvBridge, CvBridgeError
+from geometry_msgs.msg import Twist, Vector3
 
 bridge = CvBridge()
 pub = rospy.Publisher('lane_detection', Int32, queue_size=1) #ros-lane-detection
 pub_image = rospy.Publisher('lane_detection_image',Image,queue_size=1)
+pub_cmd_vel = rospy.Publisher('cmd_vel', Twist, queue_size=1)
+
+# STOP = Twist(linear=Vector3(0,0,0), angular=Vector3(0,0,0))
 
 def callback(data):
+    global x_last
+    global z_last
+    vel_msg = Twist(linear = Vector3(0.0, 0.0, 0.0), angular = Vector3(0.0, 0.0, 0.0))
     # convert image to cv2 standard format
     img = bridge.compressed_imgmsg_to_cv2(data)
     
@@ -74,8 +81,8 @@ def callback(data):
     left_edges = cv2.bitwise_and(left_edges,left_roi_mask)
 
     # Standard Hough Transform
-    right_lines = cv2.HoughLines(right_edges,0.8,np.pi/180,35)
-    left_lines = cv2.HoughLines(left_edges,0.8,np.pi/180,30)
+    right_lines = cv2.HoughLines(right_edges,0.8,np.pi/180,10)
+    left_lines = cv2.HoughLines(left_edges,0.8,np.pi/180,10)
     
     xm = cols/2
     ym = rows
@@ -148,37 +155,66 @@ def callback(data):
     
     #rospy.loginfo(time_count)
     if right_lines is not None and left_lines is not None:
-        rospy.loginfo(error)
+        # rospy.loginfo(error)
         if error > 150:
             error = 150
         elif error < -150:
-            error = -150
-
+            error =-150
+        print("g")
         message = error
+        vel_msg.linear.x = 0.24 
+        vel_msg.angular.z = error/400
+        x_last = vel_msg.linear.x
+        z_last = vel_msg.angular.z
         rospy.loginfo(error)
 
     elif left_lines is not None and right_lines is None:
         rospy.loginfo("Turn Right")
         message = -152 #turn right
-
+        if(kl==0):
+            vel_msg.linear.x = 0.24
+            vel_msg.angular.z = 0.5
+        
+        else:
+            vel_msg.linear.x = 0.24
+            vel_msg.angular.z = kl/230
+        x_last = vel_msg.linear.x
+        z_last = vel_msg.angular.z
+        print(kl)
     elif left_lines is None and right_lines is not None:
         rospy.loginfo("Turn Left")
-        message = 153 #turn let
+        message = 153 #turn left
+        if(kr==0):  
+            vel_msg.linear.x = 0.24
+            vel_msg.angular.z = 0.5
+        else:
+            vel_msg.linear.x = 0.24
+            vel_msg.angular.z = kr+30/230
+        
+        x_last = vel_msg.linear.x
+        z_last = vel_msg.angular.z
+        print(kr)
+        
     elif left_lines is None and right_lines is None:
         rospy.loginfo("No line")
         message = 0 #no line found
+        vel_msg.linear.x = 0.8*x_last
+        vel_msg.angular.z = 1.2*z_last
     else:
         message = 155 #no line found
-
+        vel_msg.linear.x = 0.8*x_last
+        vel_msg.angular.z = 1.2*z_last
     pub.publish(message)
     image = bridge.cv2_to_imgmsg(img, "bgr8")
 
     pub_image.publish(image)
+    pub_cmd_vel.publish(vel_msg)
 
 def lane_detection():
     rospy.init_node('lane-detection',anonymous=True)
     rospy.Subscriber("/main_camera/image_raw/compressed",CompressedImage,callback,queue_size=1,buff_size=2**24)
     #rospy.Subscriber("/usb_camera/image_raw/compressed", CompressedImage,callback,queue_size=1,buff_size=2**24)
+    # rospy.on_shutdown(STOP)
     try:
         rospy.loginfo("Enetering ROS Spin")
         rospy.spin()
