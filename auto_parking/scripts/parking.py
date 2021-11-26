@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-
 """ This is a script that autonomously parks the Neato either in parallel or perpendicular mode."""
 
 import rospy
@@ -9,10 +8,8 @@ from sensor_msgs.msg import LaserScan
 import math
 
 """Global Variables"""
-LENGTH_OF_SPOT = 0.40 # The parking spots are half a meter long.
 STOP = Twist(linear=Vector3(0,0,0), angular=Vector3(0,0,0))
-LENGTH_OF_CAR = 0.19
-widthofCAR = 0.38
+Speed = 0.3
 lw = 0.257
 
 class ParkingNode(object):
@@ -25,14 +22,24 @@ class ParkingNode(object):
         self.r = rospy.Rate(5)
         self.publisher = rospy.Publisher('/cmd_vel', Twist, queue_size=10)
 
+        # self.pnum = rospy.get_param('park_number')
+        # self.length_of_spot = rospy.get_param('lenc1') # length of parking spot = 37
+        # self.lengtg_of_move = rospy.get_param('lenc2') # length of moving car
+        # self.time_for_stop = rospy.get_param('time_for_stop')
+
+        self.pnum = 1
+        self.length_of_spot = 37
+        self.time_for_stop = 5
+
         # Instance Variables
         self.widthOfSpot = 0.45
         self.twist = None
         self.radius = None
-        self.park()
+        self.start_park(self.pnum)
         # self.align_width()
         # rospy.signal_shutdown("Done parking.")
         # rospy.on_shutdown(self.stop)
+        
 
                
        
@@ -41,26 +48,42 @@ class ParkingNode(object):
         self.publisher.publish(STOP)
         
     
-    # def align_with_origin(self):
-    #     """After stopping next to the second parked Neato, 
-    #     this function will align us properly so that we can successfully drive our circle."""
-    #     dist = self.widthOfSpot/2 + self.radius
-    #     travelTime = rospy.Duration(dist/0.2 + 0.5) # 0.2 is speed
-    #     self.drive_arc(0.2, 0, travelTime, -1)
-    #     self.twist = STOP
+    def align_with_origin1(self):
+        self.drive_arc(0.3, 0.51, rospy.Duration(9), 1)
+        self.twist = STOP
 
+    def align_with_origin2(self, pnum):
+        p_travelTime = rospy.Duration((self.length_of_spot * self.pnum) / Speed)
+        if pnum is 1:
+            # second parking spot
+            self.drive_arc(Speed, 0, p_travelTime, 1)
+        elif pnum is 2:
+            # third parking spot
+            self.drive_arc(Speed, 0, p_travelTime, 1)
+        self.twist = STOP
         
-    def drive_arc(self, Speed, omega, travelTime, sign):
+    def drive_arc(self, speed, omega, travelTime, sign):
         '''given the omega, travel time and direction, drive in the corresponding arc'''
         # The third parameter (sign) represents whether the forward velocity of the twist will be positive or negative
         now = rospy.Time.now()
         while rospy.Time.now() - now <= travelTime:
-            self.twist = Twist(linear=Vector3(sign*(Speed),0,0), angular=Vector3(0,0,omega))
+            self.twist = Twist(linear=Vector3(sign*(speed),0,0), angular=Vector3(0,0,omega))
             self.publisher.publish(self.twist)
 	    #print self.twist
 
 
-    def park(self):
+    def start_park(self, pnum):
+        self.drive_arc(0.01, 0, rospy.Duration(1), 1)  
+        self.align_with_origin1()
+        self.drive_arc(0.03, 0, rospy.Duration(1), 1)
+        self.align_with_origin2()
+        self.park(1) # move in
+        self.park(-1) # move out
+        self.drive_arc(0.03, 0, rospy.Duration(1), 1)
+        self.align_with_origin2
+        self.align_with_origin1
+
+    def park(self, sign): # sign * omega
         self.drive_arc(0.3, 0, rospy.Duration(0.4), 1)
         self.drive_arc(0.3, 1, rospy.Duration(1.8), 1)
         self.drive_arc(0.3, 1, rospy.Duration(0.9), -1)
@@ -72,12 +95,7 @@ class ParkingNode(object):
         self.drive_arc(0.3, 1, rospy.Duration(1), -1)
         self.drive_arc(0.3, 1, rospy.Duration(1), 1)
 
-        # self.drive_arc(0.3, 1, rospy.Duration(5.6), 1)
-
-    def deg2r(self, degree):
-        radius = math.sqrt(math.pow(lw/2, 2)+ math.pow(lw * 1/math.tan(math.radians(degree)), 2))
-        print "radius : ", radius
-        return radius
+        self.drive_arc(0, 0, rospy.Duration(self.time_for_stop), 1) # stop for 5sec
 
         
     def run(self):

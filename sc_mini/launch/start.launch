@@ -1,7 +1,7 @@
 <launch>
   <node pkg="sc_mini" type="sc_mini" name="sc_mini" output="screen">
     <param name="frame_id" type="string" value="link_lidar"/>
-    <param name="port" type="string" value="/dev/ttyUSB1"/>
+    <param name="port" type="string" value="/dev/ttyUSB0"/>
     <param name="baud_rate" type="int" value="115200"/>
   </node>
 </launch>

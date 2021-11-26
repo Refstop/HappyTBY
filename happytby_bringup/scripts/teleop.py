@@ -43,10 +43,10 @@ def teleop():
             steering = 0 
             status = status + 1
         elif key == 'a':
-            steering = steering + 0.035 # 2
+            steering = steering - 0.07 # 2
             status = status + 1
         elif key == 'd':
-            steering = steering - 0.035 # 2
+            steering = steering + 0.07 # 2
             status = status + 1
         elif key == 'x':
             velocity = velocity - 0.05 # 5
