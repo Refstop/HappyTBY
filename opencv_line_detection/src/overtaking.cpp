@@ -19,7 +19,7 @@ class overtaking {
     int checking;
     geometry_msgs::Twist new_vel;
     std_msgs::Bool wpstart;
-    ros::NodeHandle nh; 
+    ros::NodeHandle nh;
     ros::Subscriber scan_sub;
     ros::Subscriber isNoOver_sub;
     ros::Subscriber isStop_sub;
@@ -33,11 +33,11 @@ class overtaking {
         isObstacle = true;
         chuwalling = false;
         isStop = false;
-        checking = 0; 
+        checking = 0;
         scan_sub = nh.subscribe("/scan", 1, &overtaking::scanCallback, this);
         isNoOver_sub = nh.subscribe("/isNoOver", 1, &overtaking::IsNoOverCallback, this);
         isStop_sub = nh.subscribe("/isStop", 1, &overtaking::IsStopCallback, this);
-        cmd_vel_pub = nh.advertise<geometry_msgs::Twist>("cmd_vel_over", 10);
+        cmd_vel_pub = nh.advertise<geometry_msgs::Twist>("cmd_vel", 10);
         waypoint_pub = nh.advertise<std_msgs::Bool>("isWaypointStart", 10);
     }
     void IsNoOverCallback(const std_msgs::Bool::ConstPtr &msg) {
@@ -49,7 +49,7 @@ class overtaking {
     }
     
     void scanCallback(const sensor_msgs::LaserScan::ConstPtr &msg) {
-        if(laser > 0.3 && isStop && chuwalling) {
+        if(laser > 0.4 && isStop && chuwalling) {
             wpstart.data = true;
             waypoint_pub.publish(wpstart);
             exit(0);
@@ -57,42 +57,59 @@ class overtaking {
         if(isNoOver) exit(0);
         double traveltime = 0, now = 0;
         laser = msg->ranges[0];
-        if(checking == 0) {
-            if(laser < 0.3) {
-                if(isObstacle) {
-                    traveltime = 5;
-                    now = ros::Time::now().toSec();
-                    while(ros::Time::now().toSec() - now <= traveltime) {
-                        new_vel.angular.z = 0;
-                        new_vel.linear.x = 0; 
-                        cmd_vel_pub.publish(new_vel);
-                    }
-                    checking = 1;
-                    return;
-                }
-            }
+        // if(checking == 0) {
+        //     if(laser < 0.4) {
+        //         if(isObstacle) {
+        //             traveltime = 5;
+        //             now = ros::Time::now().toSec();
+        //             while(ros::Time::now().toSec() - now <= traveltime) {
+        //                 new_vel.angular.z = 0;
+        //                 new_vel.linear.x = 0;
+        //                 cmd_vel_pub.publish(new_vel);
+        //             }
+        //             checking = 1;
+        //             return;
+        //         }
+        //     }
+        // }
+        // else if(checking == 1) {
+        //     if(laser < 0.4) {
+        //         isObstacle = true;
+        //     }
+        //     else {
+        //         isObstacle = false;
+        //     }
+        // }
+        if(laser < 0.35){
+            isObstacle = false;
         }
-        else if(checking == 1) {
-            if(laser < 0.3) {
-                isObstacle = true;
-            }
-            else {
-                isObstacle = false;
+        else{
+            while(laser < 0.35) {
+                new_vel.linear.x = 0.3;
+                new_vel.angular.z = 0;
+                cmd_vel_pub.publish(new_vel);
+
             }
         }
     
         if(~isObstacle) {
-            traveltime = 2;
+            traveltime = 1.4;
             now = ros::Time::now().toSec();
             while(ros::Time::now().toSec() - now <= traveltime) {
+                new_vel.linear.x = 0.3;
                 new_vel.angular.z = 1;
-                new_vel.linear.x = 0.3; 
                 cmd_vel_pub.publish(new_vel);
             }
             now = ros::Time::now().toSec();
             while(ros::Time::now().toSec() - now <= traveltime) {
-                new_vel.angular.z = 1;
-                new_vel.linear.x = -0.3; 
+                new_vel.linear.x = 0.1;
+                new_vel.angular.z = 0;
+                cmd_vel_pub.publish(new_vel);
+            }
+            now = ros::Time::now().toSec();
+            while(ros::Time::now().toSec() - now <= traveltime) {
+                new_vel.linear.x = 0.3; 
+                new_vel.angular.z = -1;
                 cmd_vel_pub.publish(new_vel);
             }
             checking = 0;
@@ -104,8 +121,7 @@ class overtaking {
     
 
 int main(int argc, char **argv) {
-    ros::init(argc, argv, "overtaking"); 
-    ros::Rate rate(10);
+    ros::init(argc, argv, "overtaking");
     overtaking ot;
     ros::spin();
     // while (ros::ok()) {

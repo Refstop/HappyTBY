@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 from __future__ import print_function
 
 import roslib,rospy,sys,cv2,time
@@ -16,7 +17,7 @@ class lanefollowing:
         self.pub = rospy.Publisher('lane_detection', Int32, queue_size=1) #ros-lane-detection
         self.pub_image = rospy.Publisher('lane_detection_image',Image,queue_size=1)
         self.pub_cmd_vel = rospy.Publisher('cmd_vel', Twist, queue_size=1)
-        self.pub_isStop = rospy.Publisher('isStop', Bool, quene_size=1)
+        self.pub_isStop = rospy.Publisher('isStop', Bool, queue_size=1)
         self.sub_img = rospy.Subscriber("/main_camera/image_raw/compressed",CompressedImage,self.callback,queue_size=1,buff_size=2**24)
         self.x_last = 0
         self.z_last = 0
@@ -28,7 +29,7 @@ class lanefollowing:
         vel_msg = Twist(linear = Vector3(0.0, 0.0, 0.0), angular = Vector3(0.0, 0.0, 0.0))
         # convert image to cv2 standard format
         img = self.bridge.compressed_imgmsg_to_cv2(data)
-        
+        # img = cv2.imread("/home/jetbot/Pictures/123.png")
         # start time
         start_time = cv2.getTickCount()
 
@@ -47,15 +48,16 @@ class lanefollowing:
         street = cv2.bitwise_and(img,roi_mask)
         
         stop_roi_mask = np.zeros(gray.shape,dtype=np.uint8)
-        stop_roi_mask[150:rows,150:250] = 255
+        stop_roi_mask[30+rows_to_take:rows-rows_to_take,cols/5:cols*(4/5)] = 255
         stop_roi = cv2.bitwise_and(img,img,stop_roi_mask)
-
+        # cv2.imshow("1",stop_roi)
+        # cv2.waitKey(0)
         right_roi_mask = np.zeros(gray.shape,dtype=np.uint8)
-        right_roi_mask[rows-rows_to_take:rows,cols-cols_to_take:cols] = 255
+        right_roi_mask[30+rows_to_take:rows-rows_to_take,cols-cols_to_take:cols] = 255
         right_roi = cv2.bitwise_and(img,img,right_roi_mask)
         
         left_roi_mask = np.zeros(gray.shape,dtype=np.uint8)
-        left_roi_mask[rows-rows_to_take:rows,0:cols_to_take] = 255
+        left_roi_mask[30+rows_to_take:rows-rows_to_take,0:cols_to_take] = 255
         left_roi = cv2.bitwise_and(img,img,left_roi_mask)
 
         # define range of color in HSV
@@ -79,27 +81,32 @@ class lanefollowing:
         # mask AND original img
         whitehsvthresh = cv2.bitwise_and(right_roi,right_roi,mask=white_mask)
         yellowhsvthresh = cv2.bitwise_and(street,street,mask=yellow_mask)
-        
+        stopthresh = cv2.bitwise_and(stop_roi,stop_roi,mask=white_mask)
         # Canny Edge Detection 
         right_edges = cv2.Canny(whitehsvthresh,100,200)
         left_edges = cv2.Canny(yellowhsvthresh,100,200)
-        stop_edges = cv2.Canny(yellowhsvthresh,100,200)
+        stop_edges = cv2.Canny(stopthresh,100,200)
 
         right_edges = cv2.bitwise_and(right_edges,right_roi_mask)
         left_edges = cv2.bitwise_and(left_edges,left_roi_mask)
-        stop_edges = cv2.bitwise_and(stop_edges, stop_roi)
+        stop_edges = cv2.bitwise_and(stop_edges, stop_roi_mask)
         # Standard Hough Transform
-        right_lines = cv2.HoughLines(right_edges,0.8,np.pi/180,10)
-        left_lines = cv2.HoughLines(left_edges,0.8,np.pi/180,10)
+        right_lines = cv2.HoughLines(right_edges,0.8,np.pi/180,50)
+        left_lines = cv2.HoughLines(left_edges,0.8,np.pi/180,50)
         stop_lines = cv2.HoughLinesP(stop_edges,1,np.pi/180,100,50,10)
-        for line in stop_lines:
-            x1,y1,x2,y2 = line[0]
-            m = (y2-y1)/(x2-x1)
-            if (-0.3<m<0.3):
-                cv2.line(img,(x1,y1),(x2,y2),(0,255,0),1)
-                #vel_msg.linear.x = 0
-                self.stop_sign = True
 
+        if (stop_lines):
+            for lines in stop_lines:
+                
+                x1,y1,x2,y2 = lines[0]
+                m = (y2-y1)/(x2-x1)
+                if (-0.3<m<0.3):
+                    cv2.line(img,(x1,y1),(x2,y2),(0,255,0),1)
+                    print("plz")
+                    #vel_msg.linear.x = 0
+                    self.stop_sign = True
+            
+            
 
         xm = cols/2
         ym = rows
@@ -247,8 +254,8 @@ class lanefollowing:
 
 if __name__ == '__main__':
     rospy.init_node('lane-detection',anonymous=True)
-    rospy.on_shutdown(STOP)
     lf = lanefollowing()
+    rospy.on_shutdown(lf.stop)
     try:
         lf.run()
         rospy.loginfo("Enetering ROS Spin")

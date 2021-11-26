@@ -29,29 +29,33 @@ class TrafficLight:
 
     def ImageCallback(self, data):
         # if(not self.isTL): return
-
-        try:
-            src = self.bridge.imgmsg_to_cv2(data, "bgr8")
-        except CvBridgeError as e:
-            print(e)
-        
+        #/home/jetbot/Downloads/1.png
+        # try:
+        #     src = self.bridge.imgmsg_to_cv2(data, "bgr8")
+        # except CvBridgeError as e:
+        #     print(e)
+        src = cv2.imread("/home/jetbot/Downloads/3.png", 1)
         img = cv2.cvtColor(src, cv2.COLOR_BGR2GRAY)
         img = cv2.medianBlur(img, 5)
         row,col,ch=src.shape
         cimg = src.copy() # numpy function
+        # cv2.imwrite("/home/jetbot/Downloads/3.png", src)
 
-        circles = cv2.HoughCircles(img, cv2.HOUGH_GRADIENT, 1, 1, param1=40, param2=20, minRadius=0, maxRadius=0)
-        position_y = [], position_x = [], radius = []
+        circles = cv2.HoughCircles(img, cv2.HOUGH_GRADIENT, 1, 50, param1=45, param2=33, minRadius=20, maxRadius=80)
+        position_y = []
+        position_x = []
+        radius = []
         if circles is not None:
             a, b, c = circles.shape
-            if b>2:
+            print(circles)
+            if b > 2:
                 for i in range(b):
                     cv2.circle(cimg, (int(circles[0][i][0]), int(circles[0][i][1])), int(circles[0][i][2]), (0, 0, 255), 3, cv2.LINE_AA)
                     position_y.append(int(circles[0][i][1]))
                     position_x.append(int(circles[0][i][0]))
                     radius.append(int(circles[0][i][2]))
         position_y.sort(), position_x.sort()
-        print(position_y), print(position_x)
+        # print(position_y), print(position_x)
         radius_min = np.min(radius)
         
         if (abs(np.mean(position_x)-position_x[0])<50): # horizontal
@@ -76,8 +80,8 @@ class TrafficLight:
                         print("green")
                         # self.vel_msg.linear.x = 1
                         self.DriveByTravelTime(self.STRAIGHT, rospy.Duration(3))
+        
         elif (abs(np.mean(position_y)-position_y[0])<50):
-
             for i in position_x:
                 print(i,"circle's BGR value is",cimg[position_y[0],i])
                 color_x = cimg[position_x[0],i]
@@ -101,6 +105,7 @@ class TrafficLight:
                         self.DriveByTravelTime(self.STRAIGHT, rospy.Duration(3))
         cv2.imshow("detected circles", cimg)
         cv2.waitKey(0)
+        
 
     def DriveByTravelTime(self, vel, travelTime):
         now = rospy.Time.now()

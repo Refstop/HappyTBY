@@ -63,7 +63,7 @@ class ParkingNode(object):
         self.twist = STOP
         
     def drive_arc(self, speed, omega, travelTime, sign):
-        '''given the omega, travel time and direction, drive in the corresponding arc'''
+        '''given the omega, travel time and direction, drive in the corresponding arc'''n 
         # The third parameter (sign) represents whether the forward velocity of the twist will be positive or negative
         now = rospy.Time.now()
         while rospy.Time.now() - now <= travelTime:
