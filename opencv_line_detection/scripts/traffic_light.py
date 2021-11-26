@@ -28,13 +28,12 @@ class TrafficLight:
         self.isTL = True
 
     def ImageCallback(self, data):
-        # if(self.isTL): return
+        # if(not self.isTL): return
 
         try:
             src = self.bridge.imgmsg_to_cv2(data, "bgr8")
         except CvBridgeError as e:
             print(e)
-        print('asd')
         
         img = cv2.cvtColor(src, cv2.COLOR_BGR2GRAY)
         img = cv2.medianBlur(img, 5)

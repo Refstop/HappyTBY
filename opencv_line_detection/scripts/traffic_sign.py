@@ -15,7 +15,7 @@ class traffic_sign:
     def __init__(self):
         self.img_sub = rospy.Subscriber("/main_camera/image_raw",Image,self.imgCallback)
         self.darknet_sub = rospy.Subscriber("/darknet_ros/bounding_boxes",BoundingBoxes,self.Callback)
-        self.cmd_vel_pub = rospy.Publisher("cmd_vel", Twist, queue_size=1)
+        self.cmd_vel_pub = rospy.Publisher("cmd_vel_ts", Twist, queue_size=1)
         self.tl_pub = rospy.Publisher("isTL", Bool, queue_size=1)
         self.NoOvertaking_pub = rospy.Publisher("isNoOver", Bool, queue_size=1)
         self.Park_pub = rospy.Publisher("isNoPark", Bool, queue_size=1)
