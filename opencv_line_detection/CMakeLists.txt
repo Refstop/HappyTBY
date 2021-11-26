@@ -93,7 +93,7 @@ target_link_libraries(overtaking_node
 ##)
 
 catkin_install_python(PROGRAMS
-  scripts/traffic_light.py scripts/traffic_sign.py scripts/lane_detection.py
+  scripts/traffic_light.py scripts/traffic_sign.py scripts/lane_detection.py scripts/lanefollowing.py
   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
 

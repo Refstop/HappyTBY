@@ -40,7 +40,7 @@ class TrafficLight:
         row,col,ch=src.shape
         cimg = src.copy() # numpy function
 
-        circles = cv2.HoughCircles(img, cv2.HOUGH_GRADIENT, 1, 20, param1=150, param2=40, minRadius=20, maxRadius=80)
+        circles = cv2.HoughCircles(img, cv2.HOUGH_GRADIENT, 1, 1, param1=40, param2=20, minRadius=0, maxRadius=0)
         position_y = [], position_x = [], radius = []
         if circles is not None:
             a, b, c = circles.shape
@@ -54,7 +54,7 @@ class TrafficLight:
         print(position_y), print(position_x)
         radius_min = np.min(radius)
         
-        if (abs(np.mean(position_x)-position_x[0])<20): # horizontal
+        if (abs(np.mean(position_x)-position_x[0])<50): # horizontal
             for i in position_y:
                 print(i,"circle's BGR value is",cimg[i,position_x[0]])
                 color_y = cimg[i,position_x[0]]
@@ -76,7 +76,7 @@ class TrafficLight:
                         print("green")
                         # self.vel_msg.linear.x = 1
                         self.DriveByTravelTime(self.STRAIGHT, rospy.Duration(3))
-        elif (abs(np.mean(position_y)-position_y[0])<20):
+        elif (abs(np.mean(position_y)-position_y[0])<50):
 
             for i in position_x:
                 print(i,"circle's BGR value is",cimg[position_y[0],i])

@@ -161,9 +161,23 @@ def callback(data):
         elif error < -150:
             error =-150
         print("g")
+        
         message = error
-        vel_msg.linear.x = 0.24 
-        vel_msg.angular.z = error/400
+        if 0<error<=150:
+            vel_msg.linear.x = 0.24 
+            vel_msg.angular.z = error/400
+        elif -150<error<0:
+            vel_msg.linear.x = 0.24 
+            vel_msg.angular.z = -error/400
+        
+        # elif error<-150:
+        #     vel_msg.linear.x = 0.24
+        #     vel_msg.angular.z = -(kr/230)
+        else:
+            vel_msg.linear.x = 0.24 
+            vel_msg.angular.z = -error/300
+        
+
         x_last = vel_msg.linear.x
         z_last = vel_msg.angular.z
         rospy.loginfo(error)
@@ -171,11 +185,13 @@ def callback(data):
     elif left_lines is not None and right_lines is None:
         rospy.loginfo("Turn Right")
         message = -152 #turn right
-        if(kl==0):
+        if(kl>410):
+            kl=410
+        elif(kl==0):
             vel_msg.linear.x = 0.24
-            vel_msg.angular.z = 0.5
+            vel_msg.angular.z = 0.3
         
-        else:
+        elif(0<kl<=410):
             vel_msg.linear.x = 0.24
             vel_msg.angular.z = kl/230
         x_last = vel_msg.linear.x
@@ -184,12 +200,14 @@ def callback(data):
     elif left_lines is None and right_lines is not None:
         rospy.loginfo("Turn Left")
         message = 153 #turn left
+        if(kr>410):
+            kr=410
         if(kr==0):  
             vel_msg.linear.x = 0.24
-            vel_msg.angular.z = 0.5
-        else:
+            vel_msg.angular.z = -0.3
+        elif(0<kl<410):
             vel_msg.linear.x = 0.24
-            vel_msg.angular.z = kr+30/230
+            vel_msg.angular.z = -(kr/230)
         
         x_last = vel_msg.linear.x
         z_last = vel_msg.angular.z
